@@ -48,7 +48,6 @@
     "files": [
       ".next/standalone/**/*",
       ".next/static/**/*",
-      "prisma/**/*",
       "package.json"
     ],
     "extraResources": [

@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -69,6 +69,12 @@ async function startNextServer() {
 
     server.on('error', reject);
 
+    server.on('exit', (code) => {
+      if (code !== 0) {
+        reject(new Error(`Server exited with code ${code}`));
+      }
+    });
+
     setTimeout(() => resolve(server), 5000);
   });
 }
@@ -85,9 +91,7 @@ function createWindow() {
     icon: path.join(__dirname, 'public', 'icon.ico'),
   });
 
-  const url = isDev ? 'http://localhost:3000' : 'http://localhost:3000';
-
-  mainWindow.loadURL(url);
+  mainWindow.loadURL('http://localhost:3000');
 
   if (isDev) {
     mainWindow.webContents.openDevTools();
@@ -103,6 +107,11 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  ipcMain.handle('get-app-info', () => ({
+    version: app.getVersion(),
+    userDataPath: app.getPath('userData'),
+  }));
+
   copyDatabaseIfNeeded();
 
   if (!isDev) {

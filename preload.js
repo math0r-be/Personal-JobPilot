@@ -1,7 +1,6 @@
-const { contextBridge, app } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electron', {
   openExternal: (url) => require('electron').shell.openExternal(url),
-  getAppVersion: () => app.getVersion(),
-  getUserDataPath: () => app.getPath('userData'),
+  getAppInfo: () => ipcRenderer.invoke('get-app-info'),
 });

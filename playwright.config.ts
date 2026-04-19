@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './tests',
   timeout: 60000,
   use: {
-    headless: true,
+    headless: false,
     viewport: { width: 1400, height: 900 },
   },
   projects: [
