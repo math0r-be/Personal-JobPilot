@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+tsconfig.tsbuildinfo
+
+# Database (local SQLite — contains personal data)
+prisma/*.db
+prisma/*.db-journal
+prisma/prisma/
+
+# Environment — keep .env.local.example, ignore actual secrets
+.env
+.env.local
+.env.*.local
+
+# Claude Code local settings
+.claude/
+
+# Personal files
+.docs/
+
+# Dev/debug scripts
+check_cv.*
+create-table.js
+dev.ps1
+generate-db.ps1
+push-db.ps1
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Misc files at root
+*.html
+
+# Logs
+*.log
+npm-debug.log*
