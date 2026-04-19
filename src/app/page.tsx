@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getAiConfig, updateAiConfig } from '@/actions/settings';
 
 function Logo() {
   return (
@@ -37,11 +38,8 @@ export default function LandingPage() {
 
   const checkConfigured = async () => {
     try {
-      const res = await fetch('/api/settings/ai', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.apiKey) { router.push('/dashboard'); return; }
-      }
+      const data = await getAiConfig();
+      if (data.apiKey) { router.push('/dashboard'); return; }
     } catch {}
     setPhase('provider');
   };
@@ -63,12 +61,7 @@ export default function LandingPage() {
     setSaving(true);
     setError('');
     try {
-      const res = await fetch('/api/settings/ai', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, apiKey, model }),
-      });
-      if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
+      await updateAiConfig({ provider, apiKey, model });
       setPhase('done');
       setTimeout(() => router.push('/dashboard'), 800);
     } catch (e) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { createJobSchema } from '@/lib/schemas';
 
 export async function GET() {
   const jobs = await prisma.jobPosting.findMany({
@@ -10,8 +11,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const { title = '', company = '', location = '', rawText = '', status = 'new', url = '' } = body;
+  const parsed = createJobSchema.safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+  const { title = '', company = '', location = '', rawText = '', status = 'new', url = '' } = parsed.data;
 
   const job = await prisma.jobPosting.create({
     data: { title, company, location, rawText, status, url },
