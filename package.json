@@ -10,7 +10,7 @@
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "dev:desktop": "concurrently -k \"npm run dev\" \"wait-on tcp:3000 && electron .\"",
+    "dev:desktop": "concurrently -k \"npm run dev\" \"wait-on tcp:3000 && npx electron .\"",
     "build:desktop": "npm run build && electron-builder",
     "test:desktop": "playwright test"
   },
