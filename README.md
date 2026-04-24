@@ -33,10 +33,13 @@ No SaaS. No subscription. No data leaving your computer.
 
 | | |
 |---|---|
-| 🤖 **AI CV Adapter** | Paste any job posting → instant tailored CV + cover letter |
-| 📄 **CV Editor** | Rich editor with AI generation (sections, bullets, tone) |
-| 🗂️ **Kanban Pipeline** | Track applications: New → Applied → Interview → Offer |
-| 📬 **Email Composer** | Send from your own SMTP — Gmail, Outlook, anything |
+| 🤖 **AI CV Adapter** | Paste any job posting → instant tailored CV + cover letter with match score |
+| 📄 **CV Editor** | Rich editor with AI generation + 30s auto-save |
+| 🗂️ **Kanban Pipeline** | Drag & drop — New → Applied → Interview → Offer |
+| ✦ **Interview Prep** | AI-generated questions + hints, shown when status = interview |
+| 📬 **Email Composer** | Send from your own SMTP — AI subject generation |
+| 📊 **Activity Timeline** | Every action logged per job with timestamps |
+| 🔔 **Follow-up Reminders** | Dashboard highlights overdue relances |
 | 🎨 **15 CV Templates** | A4 templates across 6 categories (Classic, Modern, Tech…) |
 | 📤 **Export** | Download CV as `.docx` and cover letter separately |
 | 🦙 **Local AI support** | Works with Ollama, OpenRouter, OpenAI, or any custom endpoint |
@@ -123,11 +126,17 @@ prisma/
 
 ## 🗺️ Roadmap
 
-- [ ] Interview prep notes per application
-- [ ] More CV templates
-- [ ] One-click Windows / macOS installer (Electron)
+- [x] **Interview prep** — AI-generated questions + hints per job (for interview stage)
+- [x] **Activity timeline** — every action logged per job (status change, email sent, CV created, parsed)
+- [x] **Drag & drop Kanban** — move jobs between columns with optimistic updates
+- [x] **Follow-up reminders** — dashboard shows jobs with overdue follow-up dates
+- [x] **Auto-save CV editor** — 30s debounce, no manual save needed
+- [x] **AI email subject** — one-click subject generation when composing emails
+- [x] **Source & salary tracking** — per-job source (LinkedIn, Indeed, Referral…) and salary range
+- [x] **Responsive UI** — mobile sidebar, horizontal Kanban scroll, responsive CV editor
 - [ ] Application analytics & conversion stats
 - [ ] LinkedIn job import
+- [ ] One-click Windows / macOS installer (Electron)
 
 ---
 
