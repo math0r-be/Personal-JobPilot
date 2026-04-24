@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import AiProgressOverlay from '@/components/AiProgressOverlay';
 
 export interface CVContent {
   personal: { name: string; title: string; email: string; phone: string; location: string };
@@ -144,9 +145,16 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
               ))}
               <Field label="Compétences" value={formData.skills} multiline onChange={v => setFormData({ ...formData, skills: v })} />
               <Field label="Expériences (libre)" value={formData.experiences} multiline onChange={v => setFormData({ ...formData, experiences: v })} />
-              <button onClick={handleGenerate} disabled={isGenerating} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 36, borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', opacity: isGenerating ? 0.6 : 1 }}>
-                ✦ {isGenerating ? 'Génération…' : 'Générer avec IA'}
-              </button>
+              {isGenerating ? (
+                <AiProgressOverlay
+                  isRunning={isGenerating}
+                  steps={['Lecture du profil…', 'Structuration du contenu…', 'Rédaction des sections…', 'Finalisation…']}
+                />
+              ) : (
+                <button onClick={handleGenerate} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 36, borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)' }}>
+                  ✦ Générer avec IA
+                </button>
+              )}
             </div>
           </div>
         )}
