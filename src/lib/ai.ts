@@ -198,3 +198,59 @@ export async function generateEmailBody(
     return { subject: `Candidature au poste de ${jobTitle}`, body: stripJson(response.choices[0]?.message?.content ?? '') };
   }
 }
+
+const INTERVIEW_PREP_PROMPT = `Tu es un expert en préparation d'entretiens d'embauche. À partir d'une offre d'emploi et d'un CV, génère 10 questions d'entretien pertinentes avec des hints de réponse.
+
+**Format de sortie (JSON uniquement, sans markdown) :**
+{
+  "questions": [
+    { "question": "...", "hint": "..." }
+  ]
+}`;
+
+export async function generateInterviewPrep(parsedData: string, cvContent: string): Promise<string> {
+  const client = await getAiClient();
+  const model = await getModel();
+  const response = await client.chat.completions.create({
+    model,
+    messages: [
+      { role: 'system', content: INTERVIEW_PREP_PROMPT },
+      { role: 'user', content: `OFFRE D'EMPLOI:\n${parsedData}\n\nCV:\n${cvContent}` },
+    ],
+    max_tokens: 2000,
+    temperature: 0.7,
+  });
+  return stripJson(response.choices[0]?.message?.content ?? '{"questions":[]}');
+}
+
+const EMAIL_SUBJECT_PROMPT = `Tu es un expert en rédaction d'emails de candidature. Génère un objet d'email court et percutant.
+
+**Règles :**
+1. Maximum 60 caractères
+2. Mentionne le poste
+3. Mentionne l'entreprise (ou "votre entreprise")
+4. Pas de "Candidature au poste de" — garde direct et impactant
+
+**Format de sortie (JSON uniquement, sans markdown) :**
+{ "subject": "Objet de l'email" }`;
+
+export async function generateEmailSubject(jobTitle: string, company: string, applicantName: string): Promise<string> {
+  const client = await getAiClient();
+  const model = await getModel();
+  const response = await client.chat.completions.create({
+    model,
+    messages: [
+      { role: 'system', content: EMAIL_SUBJECT_PROMPT },
+      { role: 'user', content: `Poste: ${jobTitle}\nEntreprise: ${company}\nCandidat: ${applicantName}` },
+    ],
+    max_tokens: 100,
+    temperature: 0.7,
+  });
+  try {
+    const raw = stripJson(response.choices[0]?.message?.content ?? '{}');
+    const parsed = JSON.parse(raw);
+    return parsed.subject ?? `Candidature — ${jobTitle}`;
+  } catch {
+    return `Candidature — ${jobTitle}`;
+  }
+}

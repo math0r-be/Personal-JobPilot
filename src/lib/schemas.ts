@@ -36,6 +36,10 @@ export const createJobSchema = z.object({
   rawText: z.string().optional(),
   status: z.enum(['new', 'applied', 'interview', 'offer', 'rejected', 'archived']).optional(),
   url: z.string().optional(),
+  source: z.string().optional(),
+  salary: z.string().optional(),
+  notes: z.string().optional(),
+  followUpDate: z.string().optional(),
 });
 
 export const createCvSchema = z.object({

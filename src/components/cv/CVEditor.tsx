@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import AiProgressOverlay from '@/components/AiProgressOverlay';
 
 export interface CVContent {
@@ -44,6 +44,9 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
   const [content, setContent] = useState<CVContent>(safe);
   const [activeSection, setActiveSection] = useState('Infos');
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | ''>('');
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const lastSaveRef = useRef<number>(0);
   const [showAI, setShowAI] = useState(!isPopulated(safe));
   const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState({
@@ -51,6 +54,27 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
     experienceYears: 5, sector: '', skills: safe.skills.hard.join(', '),
     experiences: '', education: '', languages: '',
   });
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const now = Date.now();
+      if (now - lastSaveRef.current < 5000) return;
+      setSaveStatus('saving');
+      try {
+        await fetch(`/api/cvs/${cvId}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: JSON.stringify(content) }),
+        });
+        lastSaveRef.current = now;
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus(''), 2000);
+      } catch {
+        setSaveStatus('error');
+      }
+    }, 30_000);
+    autoSaveTimer.current = timer;
+    return () => clearTimeout(timer);
+  }, [content, cvId]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -70,13 +94,18 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
   };
 
   const handleSave = async () => {
+    const now = Date.now();
+    if (now - lastSaveRef.current < 5000) return;
     setIsSaving(true);
     try {
       await fetch(`/api/cvs/${cvId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: JSON.stringify(content) }),
       });
-    } catch (e) { console.error(e); }
+      lastSaveRef.current = now;
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(''), 2000);
+    } catch (e) { console.error(e); setSaveStatus('error'); }
     setIsSaving(false);
   };
 
@@ -126,9 +155,19 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
           <button onClick={() => setShowAI(!showAI)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 30, borderRadius: 'var(--r-md)', fontSize: 11, fontWeight: 500, background: showAI ? 'var(--accent)' : 'var(--paper)', border: `1px solid ${showAI ? 'var(--accent)' : 'var(--line-soft)'}`, color: showAI ? 'var(--paper-warm)' : 'var(--ink-mute)' }}>
             ✦ IA {showAI ? 'activée' : 'masquée'}
           </button>
-          <button onClick={handleSave} disabled={isSaving} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 34, borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', opacity: isSaving ? 0.6 : 1 }}>
-            {isSaving ? 'Sauvegarde…' : 'Sauvegarder'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={handleSave} disabled={isSaving} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 34, borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', opacity: isSaving ? 0.6 : 1 }}>
+              {isSaving ? '…' : 'Sauvegarder'}
+            </button>
+            {saveStatus && (
+              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: saveStatus === 'error' ? 'var(--danger)' : 'var(--text-mute)' }}>
+                {saveStatus === 'saving' ? '…' : saveStatus === 'saved' ? '✓' : '✕'}
+              </span>
+            )}
+          </div>
+          {saveStatus === 'saved' && (
+            <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-mute)', fontFamily: 'var(--font-mono)' }}>Auto-sauvegarde active</div>
+          )}
         </div>
       </div>
 

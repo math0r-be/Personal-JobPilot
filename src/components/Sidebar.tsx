@@ -47,6 +47,18 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [interviewCount, setInterviewCount] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/jobs')
+      .then(r => r.json())
+      .then((jobs: { status: string }[]) => {
+        if (Array.isArray(jobs)) {
+          setInterviewCount(jobs.filter(j => j.status === 'interview').length);
+        }
+      })
+      .catch(() => {});
+  }, [pathname]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -65,6 +77,7 @@ export default function Sidebar() {
     <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
       {NAV.map(item => {
         const active = isActive(item.href);
+        const badge = item.href === '/dashboard/jobs' && interviewCount > 0 ? interviewCount : null;
         return (
           <Link
             key={item.href}
@@ -81,7 +94,18 @@ export default function Sidebar() {
             }}
           >
             <span style={{ flexShrink: 0 }}>{item.icon}</span>
-            {item.label}
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {badge && (
+              <span style={{
+                minWidth: 18, height: 18, borderRadius: 9,
+                background: 'var(--good)', color: 'var(--bg)',
+                fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0 4px', flexShrink: 0,
+              }}>
+                {badge}
+              </span>
+            )}
           </Link>
         );
       })}
@@ -157,6 +181,7 @@ export default function Sidebar() {
       <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {NAV.map(item => {
           const active = isActive(item.href);
+          const badge = item.href === '/dashboard/jobs' && interviewCount > 0 ? interviewCount : null;
           return (
             <Link
               key={item.href}
@@ -172,7 +197,18 @@ export default function Sidebar() {
               }}
             >
               <span style={{ flexShrink: 0 }}>{item.icon}</span>
-              {!collapsed && item.label}
+              {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+              {!collapsed && badge && (
+                <span style={{
+                  minWidth: 18, height: 18, borderRadius: 9,
+                  background: 'var(--good)', color: 'var(--bg)',
+                  fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '0 4px', flexShrink: 0,
+                }}>
+                  {badge}
+                </span>
+              )}
             </Link>
           );
         })}

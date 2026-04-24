@@ -21,6 +21,11 @@ export async function POST(req: NextRequest) {
         where: { id: emailId },
         data: { status: 'sent', sentAt: new Date() },
       });
+      if (email.jobPostingId) {
+        await prisma.activityLog.create({
+          data: { jobId: email.jobPostingId, type: 'EMAIL_SENT', description: `Email envoyé à ${email.to}` },
+        });
+      }
       return NextResponse.json({ success: true });
     } else {
       await prisma.email.update({

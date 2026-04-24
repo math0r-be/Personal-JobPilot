@@ -12,10 +12,16 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const body = await request.json();
-  const { title, company, location, rawText, parsedData, status, notes, appliedAt, url } = body;
+  const { title, company, location, rawText, parsedData, status, notes, appliedAt, url, source, salary, followUpDate } = body;
 
   const job = await prisma.jobPosting.findUnique({ where: { id: params.id } });
   if (!job) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  if (status && status !== job.status) {
+    await prisma.activityLog.create({
+      data: { jobId: params.id, type: 'STATUS_CHANGED', description: `Statut changé vers ${status}` },
+    });
+  }
 
   const updated = await prisma.jobPosting.update({
     where: { id: params.id },
@@ -29,6 +35,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       ...(notes !== undefined && { notes }),
       ...(appliedAt !== undefined && { appliedAt }),
       ...(url !== undefined && { url }),
+      ...(source !== undefined && { source }),
+      ...(salary !== undefined && { salary }),
+      ...(followUpDate !== undefined && { followUpDate: followUpDate ? new Date(followUpDate) : null }),
     },
   });
 

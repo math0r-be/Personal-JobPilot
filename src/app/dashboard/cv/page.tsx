@@ -12,12 +12,6 @@ export default function CvListPage() {
     fetch('/api/cvs').then(r => r.json()).then(data => { setCvs(Array.isArray(data) ? data : []); setLoading(false); });
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce CV ?')) return;
-    await fetch(`/api/cvs/${id}`, { method: 'DELETE' });
-    setCvs(cvs.filter(c => c.id !== id));
-  };
-
   return (
     <div style={{ minHeight: '100vh', background: 'var(--paper)', display: 'flex' }}>
       <Sidebar />
@@ -55,10 +49,14 @@ export default function CvListPage() {
             {cvs.map((cv: Record<string, unknown>) => (
               <div key={cv.id as string} style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', padding: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <Link href={`/dashboard/cv/${cv.id}`} style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', textDecoration: 'none' }}>
+                  <Link href={`/dashboard/cv/${cv.id}`} style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', textDecoration: 'none', cursor: 'pointer' }}>
                     {String(cv.title || 'Sans titre')}
                   </Link>
-                  <button onClick={() => handleDelete(cv.id as string)} style={{ background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontSize: 12, padding: '0 4px' }}>×</button>
+                  <button onClick={() => {
+                    if (!confirm('Supprimer ce CV ?')) return;
+                    fetch(`/api/cvs/${cv.id}`, { method: 'DELETE' });
+                    setCvs(cvs.filter(c => c.id !== cv.id));
+                  }} style={{ background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontSize: 12, padding: '0 4px' }}>×</button>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--ink-mute)', marginBottom: 12 }}>{String(cv.templateId)}</div>
                 <Link href={`/dashboard/cv/${cv.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', textDecoration: 'none' }}>

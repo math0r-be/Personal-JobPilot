@@ -20,7 +20,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       },
     });
 
-    return NextResponse.json(updated);
+    await prisma.activityLog.create({
+      data: { jobId: params.id, type: 'PARSED', description: 'Fiche job analysée et données extraites' },
+    });
+
+return NextResponse.json(updated);
   } catch (err) {
     console.error('[api/jobs/parse]', err);
     return NextResponse.json({ error: 'Parse failed' }, { status: 500 });

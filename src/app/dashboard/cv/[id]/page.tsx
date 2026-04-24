@@ -17,9 +17,10 @@ export default async function CVEditorPage({ params }: { params: { id: string } 
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--paper)', display: 'flex' }}>
+      <style>{`@media(max-width:768px){.cv-editor-wrap{flex-direction:column!important}.cv-header{flex-direction:column;gap:12px}.cv-header-links{gap:8px;flex-wrap:wrap}}`}</style>
       <Sidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid var(--line-soft)', background: 'var(--paper-warm)', flexShrink: 0 }}>
+        <header className="cv-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid var(--line-soft)', background: 'var(--paper-warm)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--ink-mute)', textDecoration: 'none' }}>← Retour</Link>
             <span style={{ color: 'var(--line-soft)' }}>|</span>
@@ -35,7 +36,9 @@ export default async function CVEditorPage({ params }: { params: { id: string } 
             <ExportButtons cvId={safeCv.id} hasCoverLetter={hasCoverLetter} />
           </div>
         </header>
-        <CVEditor cvId={safeCv.id} initialContent={content} />
+        <div className="cv-editor-wrap" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <CVEditor cvId={safeCv.id} initialContent={content} />
+        </div>
       </div>
     </div>
   );

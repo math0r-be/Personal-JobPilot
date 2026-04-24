@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
         content: adapted,
         templateId: 'classic',
         jobPostingId: jobPostingId || null,
+        matchScore: typeof parsed.matchScore === 'number' ? parsed.matchScore : null,
       },
     });
 
@@ -61,6 +62,12 @@ export async function POST(req: NextRequest) {
           cvId: adaptedCv.id,
           jobPostingId: jobPostingId || null,
         },
+      });
+    }
+
+    if (jobPostingId) {
+      await prisma.activityLog.create({
+        data: { jobId: jobPostingId, type: 'CV_SENT', description: `CV créé pour ${adaptedTitle || 'candidature'}` },
       });
     }
 
