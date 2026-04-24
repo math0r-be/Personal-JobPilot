@@ -18,6 +18,14 @@ export default async function DashboardPage() {
   const cvs = await prisma.cv.findMany({ orderBy: { updatedAt: 'desc' } });
   const jobs = await prisma.jobPosting.findMany({ orderBy: { createdAt: 'desc' } });
 
+  const followUps = await prisma.jobPosting.findMany({
+    where: {
+      followUpDate: { lte: new Date() },
+      status: { notIn: ['rejected', 'archived'] },
+    },
+    orderBy: { followUpDate: 'asc' },
+  });
+
   const applied    = jobs.filter(j => j.status === 'applied').length;
   const interviews = jobs.filter(j => j.status === 'interview').length;
 
@@ -102,7 +110,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 36 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 36 }}>
             {STAT_CARDS.map(({ label, value, sub, color }) => (
               <div key={label} style={{
                 background: 'var(--surface)',
@@ -136,6 +144,33 @@ export default async function DashboardPage() {
             })}
             <NewCvCard />
           </div>
+
+          {/* Onboarding — shown only when the user has no data at all */}
+          {jobs.length === 0 && cvs.length === 0 && (
+            <div style={{ marginBottom: 36 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 14 }}>— DÉMARRER</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+                {[
+                  { n: '01', title: 'Compléter le profil', sub: 'Nom, email, résumé…', href: '/dashboard/settings' },
+                  { n: '02', title: 'Créer un CV', sub: 'Choisir un template et générer', href: '/dashboard/cv/new' },
+                  { n: '03', title: 'Ajouter un job', sub: 'Coller une annonce à analyser', href: '/dashboard/jobs/new' },
+                ].map(step => (
+                  <Link key={step.n} href={step.href} style={{
+                    display: 'flex', gap: 16, padding: '20px 22px',
+                    background: 'var(--surface)', border: '1px solid var(--border)',
+                    borderRadius: 8, textDecoration: 'none', color: 'var(--text)',
+                    transition: 'border-color 120ms',
+                  }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 500, fontStyle: 'italic', color: 'var(--accent)', lineHeight: 1, flexShrink: 0 }}>{step.n}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{step.title}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>{step.sub}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Two-column layout: Actions + Pipeline */}
           {jobs.length > 0 && (
@@ -186,6 +221,26 @@ export default async function DashboardPage() {
                     <span>{interviews} entretien{interviews > 1 ? 's' : ''} → {convRate}%</span>
                   </div>
                 </div>
+              {/* Follow-up reminders */}
+              {followUps.length > 0 && (
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--warn)', marginBottom: 12 }}>
+                    — RELANCES DU JOUR
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {followUps.map(j => (
+                      <Link key={j.id} href={`/dashboard/jobs/${j.id}`} style={{
+                        display: 'flex', flexDirection: 'column', padding: '10px 14px',
+                        background: 'var(--surface)', border: '1px solid var(--warn)',
+                        borderRadius: 7, textDecoration: 'none',
+                      }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{j.title || 'Sans titre'}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>{j.company || ''}</div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
               </div>
 
               {/* Right: Recent jobs */}

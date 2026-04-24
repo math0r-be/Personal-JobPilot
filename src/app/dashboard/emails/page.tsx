@@ -40,9 +40,15 @@ export default function EmailsPage() {
         </div>
 
         {loading ? <div style={{ color: 'var(--ink-mute)' }}>Chargement…</div> : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--ink-mute)' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>✉</div>
-            <div>Aucun email</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 12 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontStyle: 'italic', color: 'var(--ink)' }}>
+              {filter === 'all' ? 'Aucun email' : `Aucun email ${filter === 'draft' ? 'en brouillon' : filter === 'sent' ? 'envoyé' : 'en erreur'}`}
+            </div>
+            {filter === 'all' && (
+              <Link href="/dashboard/emails/new" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 16px', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', textDecoration: 'none', cursor: 'pointer' }}>
+                + Composer un email
+              </Link>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

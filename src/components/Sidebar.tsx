@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const NAV = [
   {
@@ -45,62 +45,115 @@ const NAV = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const update = (e: MediaQueryList | MediaQueryListEvent) => setIsMobile(e.matches);
+    update(mq);
+    mq.addEventListener('change', update as (e: MediaQueryListEvent) => void);
+    return () => mq.removeEventListener('change', update as (e: MediaQueryListEvent) => void);
+  }, []);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   };
 
+  const navItems = (
+    <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {NAV.map(item => {
+        const active = isActive(item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => setMobileOpen(false)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '9px 12px', borderRadius: 6,
+              background: active ? 'var(--accent-dim)' : 'transparent',
+              color: active ? 'var(--accent)' : 'var(--text-mute)',
+              textDecoration: 'none', fontSize: 12,
+              fontWeight: active ? 600 : 400,
+              whiteSpace: 'nowrap', transition: 'all 120ms var(--ease)',
+            }}
+          >
+            <span style={{ flexShrink: 0 }}>{item.icon}</span>
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <button
+          onClick={() => setMobileOpen(true)}
+          style={{
+            position: 'fixed', top: 12, left: 12, zIndex: 100,
+            width: 38, height: 38,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <line x1="3" y1="7" x2="21" y2="7" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="17" x2="21" y2="17" />
+          </svg>
+        </button>
+
+        {mobileOpen && (
+          <div
+            onClick={() => setMobileOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 98 }}
+          />
+        )}
+
+        <div style={{
+          position: 'fixed', left: 0, top: 0, height: '100vh', width: 208,
+          background: 'var(--surface)', borderRight: '1px solid var(--border)',
+          zIndex: 99, display: 'flex', flexDirection: 'column',
+          transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 220ms var(--ease)',
+        }}>
+          <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Link href="/" onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+              <div style={{ width: 26, height: 26, background: 'var(--accent)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+              </div>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 500, fontStyle: 'italic', letterSpacing: -0.5, color: 'var(--text)' }}>JobPilot</span>
+            </Link>
+            <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-mute)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
+          </div>
+          {navItems}
+        </div>
+      </>
+    );
+  }
+
   return (
     <div style={{
       width: collapsed ? 56 : 208,
-      background: 'var(--surface)',
-      borderRight: '1px solid var(--border)',
-      display: 'flex',
-      flexDirection: 'column',
-      flexShrink: 0,
-      height: '100vh',
-      position: 'sticky',
-      top: 0,
-      transition: 'width 220ms var(--ease)',
-      overflow: 'hidden',
-      zIndex: 10,
+      background: 'var(--surface)', borderRight: '1px solid var(--border)',
+      display: 'flex', flexDirection: 'column', flexShrink: 0,
+      height: '100vh', position: 'sticky', top: 0,
+      transition: 'width 220ms var(--ease)', overflow: 'hidden', zIndex: 10,
     }}>
-      {/* Logo */}
-      <div style={{
-        padding: '20px 16px 16px',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        flexShrink: 0,
-      }}>
+      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{
-            width: 26, height: 26, flexShrink: 0,
-            background: 'var(--accent)',
-            borderRadius: 4,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
+          <div style={{ width: 26, height: 26, flexShrink: 0, background: 'var(--accent)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
           </div>
           {!collapsed && (
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 17,
-              fontWeight: 500,
-              fontStyle: 'italic',
-              letterSpacing: -0.5,
-              color: 'var(--text)',
-              whiteSpace: 'nowrap',
-            }}>JobPilot</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 500, fontStyle: 'italic', letterSpacing: -0.5, color: 'var(--text)', whiteSpace: 'nowrap' }}>JobPilot</span>
           )}
         </Link>
       </div>
 
-      {/* Nav */}
       <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {NAV.map(item => {
           const active = isActive(item.href);
@@ -109,18 +162,13 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '9px 12px',
-                borderRadius: 6,
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 12px', borderRadius: 6,
                 background: active ? 'var(--accent-dim)' : 'transparent',
                 color: active ? 'var(--accent)' : 'var(--text-mute)',
-                textDecoration: 'none',
-                fontSize: 12,
+                textDecoration: 'none', fontSize: 12,
                 fontWeight: active ? 600 : 400,
-                whiteSpace: 'nowrap',
-                transition: 'all 120ms var(--ease)',
+                whiteSpace: 'nowrap', transition: 'all 120ms var(--ease)',
               }}
             >
               <span style={{ flexShrink: 0 }}>{item.icon}</span>
@@ -130,7 +178,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
       <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         {!collapsed && (
           <div style={{ padding: '6px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -149,11 +196,7 @@ export default function Sidebar() {
             transition: 'all 120ms',
           }}
         >
-          <svg
-            width={14} height={14} viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-            style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 220ms' }}
-          >
+          <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 220ms' }}>
             <path d="M15 18l-6-6 6-6" />
           </svg>
           {!collapsed && 'RÉDUIRE'}

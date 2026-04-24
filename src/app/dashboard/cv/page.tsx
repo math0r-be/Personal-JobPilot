@@ -33,11 +33,21 @@ export default function CvListPage() {
         </div>
 
         {loading ? <div style={{ color: 'var(--ink-mute)' }}>Chargement…</div> : cvs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--ink-mute)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>◧</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontStyle: 'italic' }}>Aucun CV</div>
-            <Link href="/dashboard/templates" style={{ display: 'inline-flex', marginTop: 16, alignItems: 'center', gap: 8, height: 38, padding: '0 16px', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
-              Choisir un template
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: 16 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontStyle: 'italic', color: 'var(--ink)' }}>Aucun CV pour l&apos;instant</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-mute)' }}>Commencez par choisir un template.</div>
+            <Link href="/dashboard/cv/new" style={{
+              marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              width: 200, height: 56, borderRadius: 'var(--r-lg)',
+              border: '2px dashed var(--line-soft)', color: 'var(--ink-mute)',
+              textDecoration: 'none', fontSize: 13, fontWeight: 500,
+              transition: 'all 200ms var(--ease)', cursor: 'pointer',
+            }}
+              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--accent)'; }}
+              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { const el = e.currentTarget; el.style.borderColor = 'var(--line-soft)'; el.style.color = 'var(--ink-mute)'; }}
+            >
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              Nouveau CV
             </Link>
           </div>
         ) : (

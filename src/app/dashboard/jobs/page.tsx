@@ -83,17 +83,16 @@ export default async function JobsPage() {
           </div>
         ) : (
           <div className="mc-scroll" style={{
-            flex: 1, overflow: 'auto', padding: '24px 36px',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+            flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '24px 36px',
+            display: 'flex',
             gap: 14,
-            alignContent: 'start',
+            alignItems: 'flex-start',
           }}>
             {STATUS_ORDER.map(status => {
               const meta = STATUS_META[status];
               const colJobs = byStatus[status];
               return (
-                <div key={status} style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <div key={status} style={{ display: 'flex', flexDirection: 'column', width: 280, flexShrink: 0 }}>
                   {/* Column header */}
                   <div style={{ paddingBottom: 12, marginBottom: 10, borderBottom: `2px solid ${meta.color}` }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -138,7 +137,12 @@ export default async function JobsPage() {
                       </Link>
                     ))}
                     {colJobs.length === 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 60, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-mute)', opacity: 0.5 }}>—</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '24px 0', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-mute)', opacity: 0.6 }}>
+                        <span>Aucun job ici</span>
+                        {status === 'new' && (
+                          <Link href="/dashboard/jobs/new" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: 10, fontFamily: 'var(--font-mono)' }}>+ Ajouter</Link>
+                        )}
+                      </div>
                     )}
                   </div>
 

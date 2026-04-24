@@ -145,3 +145,22 @@ input, textarea, select {
 .mc-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.12; }
+}
+
+.skeleton {
+  background: var(--border);
+  border-radius: var(--r-sm);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.btn-primary {
+  transition: transform 100ms, opacity 100ms;
+}
+.btn-primary:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
