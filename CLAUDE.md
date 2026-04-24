@@ -7,18 +7,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev          # Start dev server (Next.js on port 3000)
-npm run build        # Production build
-npm run lint         # ESLint
-npm run db:push      # Push Prisma schema to DB (no migration file)
-npm run db:generate  # Regenerate Prisma client after schema change
+npm run dev            # Start dev server (Next.js on port 3000)
+npm run dev:desktop    # Next dev + Electron concurrently
+npm run build          # Production build (Next.js)
+npm run build:desktop  # Next build + electron-builder (Windows NSIS)
+npm run lint           # ESLint
+npm run db:push        # Push Prisma schema to DB (no migration file)
+npm run db:generate    # Regenerate Prisma client after schema change
 ```
 
 ## Architecture
 
-JobPilot is a **100% local, open-source** job search management tool. No external auth, no payments, no third-party services required.
+JobPilot is a **100% local, open-source** job search management tool. No external auth, no payments, no third-party services required. Ships as a Next.js web app and an Electron desktop app.
 
-**Tech stack**: Next.js 14 App Router · SQLite (Prisma) · AI providers (OpenRouter/OpenAI/Ollama) · SMTP (Nodemailer)
+**Tech stack**: Next.js 14 App Router · SQLite (Prisma) · AI providers (OpenRouter/OpenAI/Ollama) · SMTP (Nodemailer) · Electron 28 · Zod
 
 **Data model** (SQLite, file: `prisma/local.db`):
 - `Profile` — local user info (single row, id='local')
@@ -33,25 +35,50 @@ JobPilot is a **100% local, open-source** job search management tool. No externa
 
 **Email**: SMTP configurable via Settings UI (Gmail App Password, Outlook, etc.). No external service required.
 
-**API routes** (no auth — local tool):
+## Electron wrapper
+
+- Entry point: `main.js` (root) — spawns standalone Next.js server, manages DB path via `app.getPath('userData')`
+- Preload: `preload.js` — context isolation, exposes IPC to renderer
+- Dev mode: runs Next dev server + Electron concurrently via `concurrently`
+- Packaged: `npm run build:desktop` produces Windows NSIS installer via electron-builder
+- DB in packaged build: copied from `resources/local.db` to userData on first launch
+
+## Server Actions (settings)
+
+Settings routes were replaced with Server Actions. No `/api/settings/*` routes exist.
+
+- **File**: `src/actions/settings.ts` (`'use server'`)
+- Functions: `getProfile`, `updateProfile`, `getAiConfig`, `updateAiConfig`, `testAiConnection`, `getSmtpConfig`, `updateSmtpConfig`, `testSmtpEmail`
+- Settings page: `src/app/dashboard/settings/page.tsx` (server component, fetches via actions)
+- Settings UI: `src/app/dashboard/settings/SettingsClient.tsx` (client component, tabs: Profile / AI / SMTP)
+
+## Validation
+
+All input validated with Zod schemas defined in `src/lib/schemas.ts`:
+- `profileSchema`, `aiConfigSchema`, `smtpConfigSchema`, `testEmailSchema`
+- `createJobSchema`, `createCvSchema`, `createEmailSchema`
+
+## API routes (no auth — local tool)
+
 - `GET/POST /api/cvs` — list or create CVs
 - `GET/PUT/DELETE /api/cvs/[id]` — single CV operations
 - `POST /api/cvs/[id]/generate` — AI generate CV content
-- `GET /api/cvs/[id]/export` — export CV as `.docx` (via `docx` library)
-- `POST /api/cvs/import` — import CV from PDF (via `pdf-parse`)
-- `POST /api/match` — AI-adapt a CV to a job posting; creates a new `Cv` and optionally a `CoverLetter`
+- `GET /api/cvs/[id]/export` — export CV (generic)
+- `GET /api/cvs/[id]/export/pdf` — export CV as PDF (`@react-pdf/renderer`)
+- `GET /api/cvs/[id]/export/docx` — export CV as `.docx` (`docx` library)
+- `GET /api/cvs/[id]/export/cover-letter-pdf` — export cover letter as PDF
+- `POST /api/cvs/import` — import CV from PDF (`pdf-parse`)
+- `POST /api/match` — AI-adapt a CV to a job posting; creates new `Cv` + optional `CoverLetter`
 - `GET /api/cover-letters/[id]/export` — get cover letter JSON by `cvId`
 - `GET/POST /api/jobs` — list or create job postings
 - `GET/PUT/DELETE /api/jobs/[id]` — single job operations
 - `POST /api/jobs/[id]/parse` — AI parse job posting text
 - `GET/POST /api/emails` — list or create emails
 - `POST /api/emails/send` — send email via SMTP
-- `GET/PUT /api/settings/profile` — profile CRUD
-- `GET/PUT/POST /api/settings/ai` — AI config CRUD + connection test
-- `GET/PUT/POST /api/settings/smtp` — SMTP config CRUD + test email
 - `GET /api/templates` — list available CV templates
 
-**Dashboard pages**:
+## Dashboard pages
+
 - `/dashboard` — home (CV count, job stats, recent applications)
 - `/dashboard/cv` — CV list
 - `/dashboard/cv/[id]` — CV editor
@@ -65,7 +92,8 @@ JobPilot is a **100% local, open-source** job search management tool. No externa
 - `/dashboard/templates` — template gallery
 - `/dashboard/settings` — tabs: Profile, AI Config, SMTP Config
 
-**Environment variables**:
+## Environment variables
+
 Only `DATABASE_URL` required in `.env.local`:
 ```
 DATABASE_URL="file:./local.db"
@@ -83,4 +111,6 @@ AI provider and SMTP credentials are stored in SQLite and configured via the Set
 
 **JobPosting statuses**: `new` → `applied` → `interview` → `offer` → `rejected` / `archived`
 
-**Templates**: 4 templates defined as a `const` array in `src/lib/templates.ts` (`classic`, `modern`, `minimal`, `creative`). Template rendering is visual-only (inline styles, no CSS classes); `accent` color varies per template.
+**Templates**: 4 templates defined in `src/lib/templates.ts` (`classic`, `modern`, `minimal`, `creative`). Rendering is visual-only (inline styles, no CSS classes); `accent` color varies per template.
+
+**UI theme**: Dark command-center palette (OKLCH color space). Background near-black, text near-white, orange accent. Fonts: Fraunces (display), Inter Tight (body), JetBrains Mono (mono). Defined in `src/app/globals.css`.

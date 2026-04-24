@@ -19,19 +19,25 @@ interface MatchResult {
 
 const SAMPLE = `Senior Product Designer · Alan · Paris, CDI
 
-Nous cherchons un·e designer pour piloter notre design system, mener la recherche utilisateur sur l'app B2C santé, et travailler en duo avec un PM.
+Nous cherchons un·e designer pour piloter notre design system, mener la recherche utilisateur sur l'app B2C santé, et travailler en duo avec un PM senior.
 
-- 5+ ans d'expérience en SaaS B2C
-- Maîtrise Figma + design tokens
-- Sensibilité produit, pas juste UI
-- Expérience santé un plus`;
+Compétences requises :
+— 5+ ans d'expérience en SaaS B2C
+— Maîtrise Figma + design tokens
+— Sensibilité produit forte, pas juste UI
+— Expérience santé ou fintech un plus
 
-const ANALYZE_STEPS = [
-  "Lecture de l'annonce…",
-  "Extraction des compétences clés…",
-  "Comparaison avec votre profil…",
-  "Réécriture du résumé…",
-  "Génération de la lettre…",
+Ce que nous offrons :
+Autonomie complète sur le design system
+Accès aux données utilisateurs
+Budget formation 3000€/an`;
+
+const SCAN_STEPS = [
+  { label: 'PARSING JOB DESCRIPTION',  detail: 'Extraction du titre, entreprise, localisation…' },
+  { label: 'EXTRACTING REQUIREMENTS',  detail: "Compétences clés, années d'expérience, stack…" },
+  { label: 'PROFILING CANDIDATE',      detail: 'Comparaison avec votre profil et historique CV…' },
+  { label: 'ADAPTING CONTENT',         detail: 'Réécriture ciblée du résumé et des expériences…' },
+  { label: 'GENERATING COVER LETTER',  detail: "Lettre personnalisée basée sur l'annonce…" },
 ];
 
 export default function MatchPage() {
@@ -59,213 +65,382 @@ export default function MatchPage() {
     }
   };
 
+  const headerLabel = phase === 'input' ? 'Paste. Lock on. Apply.' : phase === 'analyzing' ? 'Scanning…' : 'Mission Brief.';
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--paper)', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex' }}>
       <Sidebar />
-      <div className="mc-scroll fade-up" style={{ flex: 1, padding: '32px 40px', overflow: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--ink-mute)' }}>Adapter à une annonce</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 56, fontWeight: 500, lineHeight: 0.95, letterSpacing: -2, fontStyle: 'italic', marginTop: 6 }}>Collez. Match. Postulez.</div>
+      <div className="mc-scroll" style={{ flex: 1, padding: '36px 44px', overflow: 'auto' }}>
+        <div style={{ marginBottom: 28, animation: 'fade-up 0.4s var(--ease) both' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 8 }}>
+            INTEL ADAPT · ANALYSE IA
           </div>
-          <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', height: 38, padding: '0 16px', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 500, border: '1px solid transparent', color: 'var(--ink)', textDecoration: 'none' }}>Annuler</Link>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 44, fontWeight: 500, fontStyle: 'italic', lineHeight: 0.9, letterSpacing: -2, color: 'var(--text)' }}>
+            {headerLabel}
+          </div>
         </div>
 
         {error && (
-          <div style={{ background: '#fee', border: '1px solid #f99', borderRadius: 'var(--r-md)', padding: '10px 16px', fontSize: 13, color: '#c00', marginBottom: 16 }}>
+          <div style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 8, padding: '10px 16px', fontSize: 13, color: 'var(--danger)', marginBottom: 16 }}>
             {error}
           </div>
         )}
 
-        {phase === 'input' && (
-          <div style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', padding: 20, maxWidth: 800, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--ink-mute)', marginBottom: 10 }}>1 · L&apos;offre d&apos;emploi</div>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-              {['Texte', 'URL', 'PDF'].map((t, i) => (
-                <span key={t} style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 8px', borderRadius: 'var(--r-pill)', background: i === 0 ? 'var(--ink)' : 'transparent', color: i === 0 ? 'var(--paper-warm)' : 'var(--ink)', border: `1px solid ${i === 0 ? 'var(--ink)' : 'var(--line-soft)'}`, fontSize: 10, fontWeight: 500, cursor: 'default' }}>{t}</span>
-              ))}
-            </div>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Collez l'annonce ici…"
-              rows={10}
-              style={{ width: '100%', padding: 14, fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.6, background: 'var(--paper)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-md)', outline: 'none', resize: 'vertical', color: 'var(--ink)' }}
-              onFocus={(e) => { e.target.style.borderColor = 'var(--ink)'; }}
-              onBlur={(e) => { e.target.style.borderColor = 'var(--line-soft)'; }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
-              <button onClick={() => setText(SAMPLE)} style={{ display: 'inline-flex', alignItems: 'center', height: 38, padding: '0 16px', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 500, border: '1px solid var(--ink)', background: 'transparent', color: 'var(--ink)' }}>
-                ↺ Exemple
-              </button>
-              <button
-                onClick={analyze}
-                disabled={!text.trim()}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 16px', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', opacity: text.trim() ? 1 : 0.4, cursor: text.trim() ? 'pointer' : 'not-allowed' }}
-              >
-                <SparkIcon /> Analyser et adapter
-              </button>
-            </div>
-          </div>
-        )}
-
-        {phase === 'analyzing' && <AnalyzingView />}
-        {phase === 'result' && result && <ResultView result={result} onReset={() => setPhase('input')} />}
+        {phase === 'input' && <InputView text={text} setText={setText} onAnalyze={analyze} />}
+        {phase === 'analyzing' && <AnalyzingView text={text} />}
+        {phase === 'result' && result && <ResultView result={result} onReset={() => { setPhase('input'); setText(''); }} />}
       </div>
     </div>
   );
 }
 
-function AnalyzingView() {
-  const [step, setStep] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+function InputView({ text, setText, onAnalyze }: { text: string; setText: (v: string) => void; onAnalyze: () => void }) {
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  return (
+    <div style={{ animation: 'fade-up 0.45s var(--ease) 60ms both' }}>
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+        overflow: 'hidden',
+        maxWidth: 860,
+      }}>
+        <div style={{
+          padding: '10px 16px', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'var(--surface-2)',
+        }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, color: 'var(--text-mute)', textTransform: 'uppercase' }}>INTEL DROP</div>
+          <div style={{ flex: 1 }} />
+          {['Texte', 'URL', 'PDF'].map((t, i) => (
+            <span key={t} style={{
+              height: 20, padding: '0 8px', borderRadius: 10,
+              background: i === 0 ? 'var(--accent-dim)' : 'transparent',
+              border: `1px solid ${i === 0 ? 'var(--accent)' : 'var(--border)'}`,
+              color: i === 0 ? 'var(--accent)' : 'var(--text-mute)',
+              fontSize: 10, display: 'inline-flex', alignItems: 'center', cursor: 'pointer',
+            }}>{t}</span>
+          ))}
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={"Collez l'annonce ici…\n\n— Titre · Entreprise · Lieu\n— Description du poste\n— Compétences requises"}
+          rows={12}
+          style={{
+            width: '100%', padding: '20px 24px',
+            fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.75,
+            background: 'transparent', border: 'none', outline: 'none',
+            resize: 'vertical', color: 'var(--text-soft)',
+          }}
+        />
+        <div style={{
+          padding: '12px 16px', borderTop: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'var(--surface-2)',
+        }}>
+          <button onClick={() => setText(SAMPLE)} style={{
+            height: 32, padding: '0 14px', borderRadius: 6,
+            border: '1px solid var(--border)', background: 'transparent',
+            color: 'var(--text-mute)', fontSize: 11, cursor: 'pointer',
+            fontFamily: 'var(--font-mono)',
+          }}>↺ EXEMPLE</button>
+          <div style={{ flex: 1 }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-mute)' }}>
+            {wordCount} mots
+          </span>
+          <button
+            onClick={onAnalyze}
+            disabled={!text.trim()}
+            style={{
+              height: 36, padding: '0 20px', borderRadius: 7,
+              border: '1px solid var(--accent)',
+              background: text.trim() ? 'var(--accent)' : 'var(--accent-dim)',
+              color: text.trim() ? 'var(--bg)' : 'var(--accent)',
+              fontSize: 12, fontWeight: 700, cursor: text.trim() ? 'pointer' : 'not-allowed',
+              fontFamily: 'var(--font-mono)', letterSpacing: 0.8,
+              transition: 'all 150ms',
+              boxShadow: text.trim() ? '0 0 18px var(--accent-dim)' : 'none',
+            }}
+          >⚡ ENGAGE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScanlineOverlay() {
+  const [pos, setPos] = useState(0);
+  const rafRef = useRef<number>(0);
+  const startRef = useRef<number | null>(null);
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => setStep(p => Math.min(p + 1, ANALYZE_STEPS.length - 1)), 600);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    const animate = (ts: number) => {
+      if (!startRef.current) startRef.current = ts;
+      const p = ((ts - startRef.current) / 2000) % 1;
+      setPos(p * 100);
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
   return (
-    <div style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', padding: 32, maxWidth: 600, boxShadow: 'var(--shadow-sm)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 18, background: 'var(--ink)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse-ring 1.4s var(--ease) infinite' }}>
-          <SparkIcon />
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', borderRadius: 8 }}>
+      <div style={{
+        position: 'absolute', left: 0, right: 0, height: 2,
+        top: `${pos}%`,
+        background: 'linear-gradient(90deg, transparent, var(--accent) 40%, var(--accent) 60%, transparent)',
+        opacity: 0.6,
+        boxShadow: '0 0 12px var(--accent)',
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.012) 2px, rgba(255,255,255,0.012) 4px)',
+      }} />
+    </div>
+  );
+}
+
+function DissolvedText({ text, progress }: { text: string; progress: number }) {
+  const lines = text.split('\n').slice(0, 8);
+  return (
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1.7, color: 'var(--text-mute)', overflow: 'hidden', userSelect: 'none' }}>
+      {lines.map((line, li) => {
+        const lineProgress = Math.max(0, progress * lines.length - li);
+        const blurAmount = Math.min(lineProgress * 4, 6);
+        const opacity = Math.max(0.15, 1 - lineProgress * 0.7);
+        return (
+          <div key={li} style={{ filter: `blur(${blurAmount}px)`, opacity, transition: 'filter 300ms, opacity 300ms', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {line || ' '}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RadarLoader({ size = 80 }: { size?: number }) {
+  const [angle, setAngle] = useState(0);
+  const rafRef = useRef<number>(0);
+  const prevRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const tick = (ts: number) => {
+      if (prevRef.current) setAngle(a => (a + (ts - (prevRef.current ?? ts)) * 0.18) % 360);
+      prevRef.current = ts;
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const r = size / 2 - 4;
+  const cx = size / 2;
+  const rad = (angle - 90) * Math.PI / 180;
+  const rad2 = (angle - 150) * Math.PI / 180;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      {[r, r * 0.66, r * 0.33].map((radius, i) => (
+        <circle key={i} cx={cx} cy={cx} r={radius} fill="none" stroke="var(--border)" strokeWidth="1" opacity={0.6} />
+      ))}
+      <line x1={cx} y1={4} x2={cx} y2={size - 4} stroke="var(--border)" strokeWidth="0.5" opacity="0.4" />
+      <line x1={4} y1={cx} x2={size - 4} y2={cx} stroke="var(--border)" strokeWidth="0.5" opacity="0.4" />
+      <defs>
+        <radialGradient id="rg" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.35" />
+        </radialGradient>
+      </defs>
+      <path
+        d={`M ${cx} ${cx} L ${cx + r * Math.cos(rad)} ${cx + r * Math.sin(rad)} A ${r} ${r} 0 0 1 ${cx + r * Math.cos(rad2)} ${cx + r * Math.sin(rad2)} Z`}
+        fill="url(#rg)"
+      />
+      <circle
+        cx={cx + r * Math.cos(rad)} cy={cx + r * Math.sin(rad)} r={3}
+        fill="var(--accent)"
+        style={{ filter: 'drop-shadow(0 0 4px var(--accent))' }}
+      />
+    </svg>
+  );
+}
+
+function AnalyzingView({ text }: { text: string }) {
+  const [step, setStep] = useState(0);
+  const [textProgress, setTextProgress] = useState(0);
+
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let elapsed = 0;
+    SCAN_STEPS.forEach((_, i) => {
+      elapsed += 800;
+      const t = setTimeout(() => setStep(i + 1), elapsed);
+      timers.push(t);
+    });
+    const tp = setInterval(() => setTextProgress(p => Math.min(p + 0.08, 1)), 120);
+    return () => { timers.forEach(clearTimeout); clearInterval(tp); };
+  }, []);
+
+  const progress = step / SCAN_STEPS.length;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, animation: 'fade-up 0.4s var(--ease) both' }}>
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 10, padding: 28, position: 'relative', overflow: 'hidden', minHeight: 320,
+      }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 16 }}>
+          INTEL REÇU · EN ANALYSE
         </div>
-        <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500 }}>L&apos;IA travaille…</div>
-          <div style={{ fontSize: 12, color: 'var(--ink-mute)', marginTop: 2 }}>Quelques secondes</div>
+        <DissolvedText text={text} progress={textProgress} />
+        <ScanlineOverlay />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'var(--border)' }}>
+          <div style={{ height: '100%', background: 'var(--accent)', width: `${progress * 100}%`, transition: 'width 600ms var(--ease)', boxShadow: '0 0 8px var(--accent)' }} />
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {ANALYZE_STEPS.map((s, idx) => (
-          <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: idx <= step ? 1 : 0.3, transition: 'opacity 200ms var(--ease)' }}>
-            <div style={{ width: 18, height: 18, borderRadius: 9, background: idx < step ? 'var(--good)' : idx === step ? 'var(--accent)' : 'var(--line-soft)', color: 'var(--paper-warm)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, flexShrink: 0 }}>
-              {idx < step ? '✓' : idx === step ? '•' : ''}
-            </div>
-            <span style={{ fontSize: 13, color: 'var(--ink)' }}>{s}</span>
-          </div>
-        ))}
+
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 28, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <RadarLoader size={100} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {SCAN_STEPS.map((s, i) => {
+            const isDone = i < step;
+            const isActive = i === step - 1;
+            const isPending = i >= step;
+            return (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, opacity: isPending ? 0.3 : 1, transition: 'opacity 300ms' }}>
+                <div style={{
+                  width: 16, height: 16, borderRadius: 8, flexShrink: 0, marginTop: 1,
+                  background: isDone ? 'var(--good)' : isActive ? 'var(--accent)' : 'var(--border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: isActive ? '0 0 8px var(--accent)' : 'none',
+                  transition: 'background 200ms, box-shadow 200ms',
+                }}>
+                  {isDone && <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                  {isActive && <div style={{ width: 5, height: 5, borderRadius: 3, background: 'var(--bg)' }} />}
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 0.8, color: isDone ? 'var(--good)' : isActive ? 'var(--accent)' : 'var(--text-mute)' }}>{s.label}</div>
+                  {(isDone || isActive) && <div style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 2 }}>{s.detail}</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScoreRing({ score }: { score: number }) {
+  const [display, setDisplay] = useState(0);
+  const size = 140;
+  const r = 58;
+  const circ = 2 * Math.PI * r;
+
+  useEffect(() => {
+    let start: number | null = null;
+    const duration = 1400;
+    const tick = (ts: number) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 4);
+      setDisplay(Math.round(ease * score));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [score]);
+
+  const scoreColor = score >= 80 ? 'var(--good)' : score >= 65 ? 'var(--warn)' : 'var(--danger)';
+  const strokeDash = (display / 100) * circ;
+
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth="6" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={scoreColor} strokeWidth="6"
+          strokeDasharray={`${strokeDash} ${circ}`} strokeLinecap="round"
+          style={{ filter: `drop-shadow(0 0 8px ${scoreColor})` }}
+        />
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 500, fontStyle: 'italic', lineHeight: 1, color: scoreColor }}>{display}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-mute)', letterSpacing: 1 }}>MATCH</div>
       </div>
     </div>
   );
 }
 
 function ResultView({ result, onReset }: { result: MatchResult; onReset: () => void }) {
-  const score = result.score;
-  const circumference = 2 * Math.PI * 52;
-  const label = score >= 80 ? 'Excellent match' : score >= 60 ? 'Bon match' : 'Match partiel';
+  const [tab, setTab] = useState<'cv' | 'cover'>('cv');
+  const label = result.score >= 80 ? 'Excellent Match' : result.score >= 65 ? 'Bon Match' : 'Match Partiel';
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 24, alignItems: 'flex-start' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Score */}
-        <div style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', padding: 24, textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto 12px' }}>
-            <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx="60" cy="60" r="52" fill="none" stroke="var(--line-soft)" strokeWidth="8" />
-              <circle cx="60" cy="60" r="52" fill="none" stroke="var(--accent)" strokeWidth="8" strokeDasharray={`${(score / 100) * circumference} ${circumference}`} strokeLinecap="round" />
-            </svg>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 38, fontWeight: 600, fontStyle: 'italic', lineHeight: 1 }}>{score}</div>
-              <div style={{ fontSize: 10, color: 'var(--ink-mute)' }}>match</div>
-            </div>
-          </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500 }}>{label}</div>
-          {result.adaptedTitle && <div style={{ fontSize: 12, color: 'var(--ink-mute)', marginTop: 4 }}>{result.adaptedTitle}</div>}
-        </div>
-
-        {/* Keywords */}
-        {result.keywords.length > 0 && (
-          <div style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', padding: 20, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--ink-mute)', marginBottom: 8 }}>Mots-clés captés</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+    <div style={{ animation: 'fade-up 0.5s var(--ease) both' }}>
+      {/* Score + meta */}
+      <div style={{ display: 'flex', gap: 20, marginBottom: 24, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, alignItems: 'center' }}>
+        <ScoreRing score={result.score} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--text-mute)', marginBottom: 6 }}>ANALYSE TERMINÉE</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 500, fontStyle: 'italic', color: 'var(--text)', lineHeight: 1, marginBottom: 4 }}>{label}</div>
+          {result.adaptedTitle && <div style={{ fontSize: 13, color: 'var(--text-mute)' }}>{result.adaptedTitle}</div>}
+          {result.keywords.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>
               {result.keywords.map(k => (
-                <span key={k} style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 8px', borderRadius: 'var(--r-pill)', background: 'var(--accent-soft)', color: 'var(--accent-deep)', border: '1px solid var(--accent)', fontSize: 10, fontWeight: 500 }}>{k}</span>
+                <span key={k} style={{ height: 22, padding: '0 9px', borderRadius: 11, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)', fontSize: 10, fontWeight: 500, display: 'inline-flex', alignItems: 'center' }}>{k}</span>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Changes */}
+          )}
+        </div>
         {result.changes.length > 0 && (
-          <div style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', padding: 20, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--ink-mute)', marginBottom: 8 }}>{result.changes.length} modifications</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {result.changes.map(m => (
-                <div key={m} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12 }}>
-                  <span style={{ color: 'var(--good)', flexShrink: 0, marginTop: 1 }}>✓</span>
-                  <span>{m}</span>
-                </div>
-              ))}
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
+            {result.changes.map(c => (
+              <div key={c} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-soft)' }}>
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="var(--good)" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="M20 6L9 17l-5-5" /></svg>
+                {c}
+              </div>
+            ))}
           </div>
         )}
-
-        <button onClick={onReset} style={{ fontSize: 12, color: 'var(--ink-mute)', textAlign: 'center' }}>← Nouvelle annonce</button>
       </div>
 
-      {/* Documents */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {/* CV Card */}
-        <div style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ padding: 18, borderBottom: '1px solid var(--line-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500 }}>CV Adapté</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {result.cvId && (
-                <>
-                  <Link href={`/dashboard/cv/${result.cvId}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, border: '1px solid var(--ink)', color: 'var(--ink)', textDecoration: 'none', background: 'transparent' }}>
-                    ✏ Éditer
-                  </Link>
-                  <a href={`/api/cvs/${result.cvId}/export/pdf`} download style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
-                    ↓ PDF
-                  </a>
-                  <a href={`/api/cvs/${result.cvId}/export/docx`} download style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
-                    ↓ DOCX
-                  </a>
-                </>
-              )}
-            </div>
-          </div>
-          <div style={{ padding: '24px 40px', background: 'var(--paper-deep)' }}>
-            {result.adaptedSummary && (
-              <div style={{ background: 'var(--paper-warm)', borderRadius: 'var(--r-md)', padding: 20, border: '1px solid var(--line-soft)' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 500, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--ink-mute)', marginBottom: 8 }}>Résumé</div>
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--ink)' }}>{result.adaptedSummary}</p>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        {([['cv', 'CV Adapté'], ['cover', 'Lettre de motivation']] as const).map(([id, lbl]) => (
+          <button key={id} onClick={() => setTab(id)} style={{
+            height: 34, padding: '0 16px', borderRadius: 6,
+            border: `1px solid ${tab === id ? 'var(--accent)' : 'var(--border)'}`,
+            background: tab === id ? 'var(--accent-dim)' : 'transparent',
+            color: tab === id ? 'var(--accent)' : 'var(--text-mute)',
+            fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 120ms',
+          }}>{lbl}</button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <button onClick={onReset} style={{ height: 34, padding: '0 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mute)', fontSize: 12, cursor: 'pointer' }}>← Nouvelle annonce</button>
+        {result.cvId && (
+          <>
+            <Link href={`/dashboard/cv/${result.cvId}`} style={{ height: 34, padding: '0 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mute)', fontSize: 12, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>✏ Éditer</Link>
+            <a href={`/api/cvs/${result.cvId}/export`} download style={{ height: 34, padding: '0 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--bg)', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none', fontFamily: 'var(--font-mono)', letterSpacing: 0.5 }}>↓ EXPORTER</a>
+          </>
+        )}
+      </div>
 
-        {/* Cover Letter Card */}
-        <div style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ padding: 18, borderBottom: '1px solid var(--line-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500 }}>Lettre de motivation</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {result.cvId && (
-                <>
-                  <a href={`/api/cover-letters/${result.cvId}/export/pdf`} download style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
-                    ↓ PDF
-                  </a>
-                  <a href={`/api/cover-letters/${result.cvId}/export/docx`} download style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
-                    ↓ DOCX
-                  </a>
-                </>
-              )}
-            </div>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 32 }}>
+        {tab === 'cv' && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 14 }}>RÉSUMÉ PROFESSIONNEL — ADAPTÉ</div>
+            <p style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-soft)', maxWidth: 720 }}>{result.adaptedSummary}</p>
           </div>
-          <div style={{ padding: '24px 40px', background: 'var(--paper-deep)' }}>
-            {result.coverLetter && (
-              <div style={{ background: 'var(--paper-warm)', borderRadius: 'var(--r-md)', padding: 20, border: '1px solid var(--line-soft)' }}>
-                <div style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--ink)', whiteSpace: 'pre-wrap' }}>{result.coverLetter}</div>
-              </div>
-            )}
+        )}
+        {tab === 'cover' && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 14 }}>LETTRE DE MOTIVATION</div>
+            <p style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--text-soft)', maxWidth: 680, whiteSpace: 'pre-wrap' }}>{result.coverLetter}</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
-}
-
-function SparkIcon() {
-  return <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" /></svg>;
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import AiProgressOverlay from '@/components/AiProgressOverlay';
 
 const STATUS_OPTIONS = ['new', 'applied', 'interview', 'offer', 'rejected', 'archived'];
 const STATUS_LABELS: Record<string, string> = {
@@ -114,9 +115,16 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
               )}
 
               {!parsedData && (
-                <button onClick={handleParse} disabled={parsing} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', border: 'none', cursor: 'pointer', opacity: parsing ? 0.5 : 1 }}>
-                  {parsing ? 'Analyse en cours…' : '✦ Analyser avec IA'}
-                </button>
+                parsing ? (
+                  <AiProgressOverlay
+                    isRunning={parsing}
+                    steps={['Lecture de l\'offre…', 'Extraction des compétences…', 'Structuration des données…']}
+                  />
+                ) : (
+                  <button onClick={handleParse} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', border: 'none', cursor: 'pointer' }}>
+                    ✦ Analyser avec IA
+                  </button>
+                )
               )}
             </div>
 
