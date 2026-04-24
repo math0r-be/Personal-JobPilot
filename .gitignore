@@ -24,6 +24,7 @@ prisma/prisma/
 
 # Personal files
 .docs/
+docs/
 
 # Dev/debug scripts
 check_cv.*
