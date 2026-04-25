@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getAiConfig, updateAiConfig } from '@/actions/settings';
+import OllamaModelSelect from '@/components/OllamaModelSelect';
 
 function Logo() {
   return (
@@ -39,7 +40,10 @@ export default function LandingPage() {
   const checkConfigured = async () => {
     try {
       const data = await getAiConfig();
-      if (data.apiKey) { router.push('/dashboard'); return; }
+      if (data.apiKey || data.provider === 'ollama' || data.baseUrl) {
+        router.push('/dashboard');
+        return;
+      }
     } catch {}
     setPhase('provider');
   };
@@ -177,13 +181,17 @@ export default function LandingPage() {
 
               <div style={{ marginBottom: 24 }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 500, marginBottom: 6 }}>Modèle</label>
-                <input
-                  type="text"
-                  value={model}
-                  onChange={e => setModel(e.target.value)}
-                  placeholder="model name"
-                  style={{ width: '100%', height: 40, padding: '0 12px', fontSize: 13, background: 'var(--paper)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-md)', color: 'var(--ink)', outline: 'none' }}
-                />
+                {provider === 'ollama' ? (
+                  <OllamaModelSelect value={model} onChange={setModel} />
+                ) : (
+                  <input
+                    type="text"
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                    placeholder="model name"
+                    style={{ width: '100%', height: 40, padding: '0 12px', fontSize: 13, background: 'var(--paper)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-md)', color: 'var(--ink)', outline: 'none' }}
+                  />
+                )}
               </div>
 
               {error && <div style={{ background: '#fee', border: '1px solid #f99', borderRadius: 'var(--r-md)', padding: '8px 12px', fontSize: 12, color: '#c00', marginBottom: 12 }}>{error}</div>}
