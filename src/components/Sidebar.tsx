@@ -189,7 +189,7 @@ export default function Sidebar() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '9px 12px', borderRadius: 6,
-                background: active ? 'var(--accent-dim)' : 'transparent',
+                cursor: active ? 'default' : 'pointer', background: active ? 'var(--accent-dim)' : 'transparent',
                 color: active ? 'var(--accent)' : 'var(--text-mute)',
                 textDecoration: 'none', fontSize: 12,
                 fontWeight: active ? 600 : 400,

@@ -238,10 +238,11 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
               {!parsedData && (
                 parsing ? (
-                  <AiProgressOverlay
-                    isRunning={parsing}
-                    steps={["Lecture de l'offre…", 'Extraction des compétences…', 'Structuration des données…']}
-                  />
+                  <div style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div className="skeleton" style={{ height: 22, width: '60%', borderRadius: 4 }} />
+                    <div className="skeleton" style={{ height: 18, width: '40%', borderRadius: 4 }} />
+                    <div className="skeleton" style={{ height: 18, width: '50%', borderRadius: 4 }} />
+                  </div>
                 ) : (
                   <button onClick={handleParse} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', border: 'none', cursor: 'pointer' }}>
                     ✦ Analyser avec IA

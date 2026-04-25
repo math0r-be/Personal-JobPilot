@@ -2,10 +2,19 @@ import { z } from 'zod';
 
 export const profileSchema = z.object({
   name: z.string().optional(),
-  email: z.string().optional(),
+  email: z.string().email().optional().or(z.string().max(0).optional()),
   phone: z.string().optional(),
   location: z.string().optional(),
   summary: z.string().optional(),
+  photoUrl: z.string().optional(),
+});
+
+export const updateCvSchema = z.object({
+  title: z.string().max(200).optional(),
+  content: z.string().optional(),
+  templateId: z.string().optional(),
+  jobPostingId: z.string().nullable().optional(),
+  photo: z.string().optional(),
 });
 
 export const aiConfigSchema = z.object({
@@ -53,4 +62,16 @@ export const createEmailSchema = z.object({
   subject: z.string().min(1),
   body: z.string().min(1),
   status: z.enum(['draft', 'sent', 'error']).optional(),
+});
+
+export const matchSchema = z.object({
+  jobText: z.string().min(1, 'jobText is required'),
+  cvId: z.string().optional(),
+  jobPostingId: z.string().optional(),
+  referenceCvId: z.string().optional(),
+});
+
+export const importLinkedinSchema = z.object({
+  pdfBase64: z.string().min(1, 'PDF data required'),
+  title: z.string().optional(),
 });

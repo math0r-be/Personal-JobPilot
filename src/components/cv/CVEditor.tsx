@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import AiProgressOverlay from '@/components/AiProgressOverlay';
+import { TEMPLATES } from '@/lib/templates';
+import ExportButtons from '@/components/ExportButtons';
 
 export interface CVContent {
   personal: { name: string; title: string; email: string; phone: string; location: string };
@@ -29,7 +32,7 @@ function isPopulated(c: CVContent) {
   return !!(c.personal?.name || c.summary || c.experience?.length || c.skills?.hard?.length);
 }
 
-export default function CVEditor({ cvId, initialContent }: { cvId: string; initialContent: CVContent }) {
+export default function CVEditor({ cvId, initialContent, initialPhoto = '', initialTemplateId = 'atlas', cvTitle = 'Mon CV', hasCoverLetter = false }: { cvId: string; initialContent: CVContent; initialPhoto?: string; initialTemplateId?: string; cvTitle?: string; hasCoverLetter?: boolean }) {
   const safe: CVContent = {
     ...EMPTY,
     ...initialContent,
@@ -47,6 +50,11 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | ''>('');
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
   const lastSaveRef = useRef<number>(0);
+  const hasSavedOnceRef = useRef(false);
+  const contentRef = useRef(content);
+  const cvIdRef = useRef(cvId);
+  useEffect(() => { contentRef.current = content; }, [content]);
+  useEffect(() => { cvIdRef.current = cvId; }, [cvId]);
   const [showAI, setShowAI] = useState(!isPopulated(safe));
   const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState({
@@ -54,16 +62,33 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
     experienceYears: 5, sector: '', skills: safe.skills.hard.join(', '),
     experiences: '', education: '', languages: '',
   });
+  const [photo, setPhoto] = useState(initialPhoto);
+  const [templateId, setTemplateId] = useState(initialTemplateId);
+  const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+  const templateDropdownRef = useRef<HTMLDivElement>(null);
+  const templateMap = useMemo(() => new Map(TEMPLATES.map(t => [t.id, t])), []);
+  const currentTemplate = templateMap.get(templateId as typeof TEMPLATES[number]['id']) ?? TEMPLATES[0];
+
+useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (templateDropdownRef.current && !templateDropdownRef.current.contains(e.target as Node)) {
+        setShowTemplateDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
+      if (!hasSavedOnceRef.current) return;
       const now = Date.now();
       if (now - lastSaveRef.current < 5000) return;
       setSaveStatus('saving');
       try {
-        await fetch(`/api/cvs/${cvId}`, {
+        await fetch(`/api/cvs/${cvIdRef.current}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: JSON.stringify(content) }),
+          body: JSON.stringify({ content: JSON.stringify(contentRef.current) }),
         });
         lastSaveRef.current = now;
         setSaveStatus('saved');
@@ -73,8 +98,8 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
       }
     }, 30_000);
     autoSaveTimer.current = timer;
-    return () => clearTimeout(timer);
-  }, [content, cvId]);
+    return () => clearTimeout(autoSaveTimer.current);
+  }, []);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -97,6 +122,7 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
     const now = Date.now();
     if (now - lastSaveRef.current < 5000) return;
     setIsSaving(true);
+    hasSavedOnceRef.current = true;
     try {
       await fetch(`/api/cvs/${cvId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -107,6 +133,53 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
       setTimeout(() => setSaveStatus(''), 2000);
     } catch (e) { console.error(e); setSaveStatus('error'); }
     setIsSaving(false);
+  };
+
+  const handleTemplateChange = async (newTemplateId: string) => {
+    setTemplateId(newTemplateId);
+    setShowTemplateDropdown(false);
+    try {
+      await fetch(`/api/cvs/${cvId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId: newTemplateId }),
+      });
+    } catch (e) { console.error(e); }
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = async () => {
+      const MAX = 400;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        const r = Math.min(MAX / w, MAX / h);
+        w = Math.round(w * r); h = Math.round(h * r);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, w, h);
+      const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1] || '';
+      URL.revokeObjectURL(url);
+      setPhoto(base64);
+      try {
+        await fetch(`/api/cvs/${cvId}/photo`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photo: base64 }),
+        });
+      } catch (err) { console.error(err); }
+    };
+    img.src = url;
+  };
+
+  const handlePhotoRemove = async () => {
+    setPhoto('');
+    try {
+      await fetch(`/api/cvs/${cvId}/photo`, { method: 'DELETE' });
+    } catch (e) { console.error(e); }
   };
 
   const set = (path: string, value: unknown) => {
@@ -142,6 +215,23 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
   };
 
   return (
+    <>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid var(--line-soft)', background: 'var(--paper-warm)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--ink-mute)', textDecoration: 'none' }}>← Retour</Link>
+          <span style={{ color: 'var(--line-soft)' }}>|</span>
+          <span style={{ fontWeight: 600, fontSize: 14 }}>{cvTitle}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 'var(--r-pill)', background: `${currentTemplate.accent}22`, border: `1px solid ${currentTemplate.accent}44`, fontSize: 10, color: currentTemplate.accent, fontFamily: 'var(--font-mono)' }}>
+            {currentTemplate.name}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Link href="/dashboard/match" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
+            ✦ Adapter à une annonce
+          </Link>
+          <ExportButtons cvId={cvId} hasCoverLetter={hasCoverLetter} templateId={templateId} title={cvTitle} />
+        </div>
+      </header>
     <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '200px 1fr 1fr', overflow: 'hidden', minHeight: 0 }}>
       {/* Nav */}
       <div style={{ background: 'var(--paper-warm)', borderRight: '1px solid var(--line-soft)', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
@@ -151,7 +241,35 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
             {s}
           </button>
         ))}
-        <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid var(--line-soft)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+
+        <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--line-soft)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: 'var(--ink-mute)', padding: '0 8px', marginBottom: 6 }}>Template</div>
+          <div ref={templateDropdownRef} style={{ position: 'relative' }}>
+            <button onClick={() => setShowTemplateDropdown(!showTemplateDropdown)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 'var(--r-md)', background: 'var(--paper)', border: '1px solid var(--line-soft)', fontSize: 11, color: 'var(--ink)', cursor: 'pointer' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: currentTemplate.accent, flexShrink: 0 }} />
+                <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentTemplate.name}</span>
+              </span>
+              <span style={{ fontSize: 9, color: 'var(--ink-mute)' }}>▾</span>
+            </button>
+            {showTemplateDropdown && (
+              <div style={{ position: 'absolute', bottom: '100%', left: 0, right: 0, background: 'var(--paper)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-md)', marginBottom: 4, zIndex: 50, overflow: 'hidden' }}>
+                {TEMPLATES.map(t => (
+                  <button key={t.id} onClick={() => handleTemplateChange(t.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: templateId === t.id ? 'var(--ink)' : 'transparent', color: templateId === t.id ? 'var(--paper-warm)' : 'var(--ink)', fontSize: 11, textAlign: 'left', borderBottom: '1px solid var(--line-soft)', cursor: 'pointer' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: t.accent, flexShrink: 0 }} />
+                    <span style={{ flex: 1 }}>{t.name}</span>
+                    <span style={{ fontSize: 9, opacity: 0.5 }}>{t.category}</span>
+                  </button>
+                ))}
+                <Link href="/dashboard/templates" target="_blank" style={{ display: 'block', textAlign: 'center', padding: '7px 10px', fontSize: 10, color: 'var(--accent)', textDecoration: 'none', borderTop: '1px solid var(--line-soft)', letterSpacing: 0.5 }}>
+                  → Voir tous les templates
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
           <button onClick={() => setShowAI(!showAI)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 30, borderRadius: 'var(--r-md)', fontSize: 11, fontWeight: 500, background: showAI ? 'var(--accent)' : 'var(--paper)', border: `1px solid ${showAI ? 'var(--accent)' : 'var(--line-soft)'}`, color: showAI ? 'var(--paper-warm)' : 'var(--ink-mute)' }}>
             ✦ IA {showAI ? 'activée' : 'masquée'}
           </button>
@@ -203,6 +321,16 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
             {[['Nom', 'personal.name'], ['Titre / Poste', 'personal.title'], ['Email', 'personal.email'], ['Téléphone', 'personal.phone'], ['Localisation', 'personal.location']].map(([label, path]) => (
               <Field key={path} label={label} value={(content.personal as Record<string, string>)[path.split('.')[1]] || ''} onChange={v => set(path, v)} />
             ))}
+            <div>
+              <div style={{ fontSize: 10, color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Photo</div>
+              <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ fontSize: 11, color: 'var(--ink-mute)' }} />
+              {photo && (
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img src={`data:image/jpeg;base64,${photo}`} style={{ width: 48, height: 48, borderRadius: 4, objectFit: 'cover', border: '1px solid var(--line-soft)' }} alt="CV photo" />
+                  <button onClick={handlePhotoRemove} style={{ fontSize: 10, color: '#c00', background: 'none', border: 'none', cursor: 'pointer' }}>Supprimer</button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -286,58 +414,20 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
       </div>
 
       {/* Preview */}
-      <div className="mc-scroll" style={{ padding: '24px 20px', overflowY: 'auto', background: 'var(--paper-deep)' }}>
-        {/* CV document */}
+      <div className="mc-scroll" style={{ padding: '24px 20px', overflowY: 'auto', background: 'var(--paper-deep)', display: 'flex', flexDirection: 'column', gap: 0 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: 'var(--ink-mute)', marginBottom: 12 }}>Aperçu — CV</div>
-        <div style={{ background: 'var(--paper-warm)', borderRadius: 4, padding: '32px 28px', boxShadow: 'var(--shadow-md)', fontSize: 10, lineHeight: 1.7 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, fontStyle: 'italic' }}>{content.personal.name || 'Votre nom'}</div>
-          <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>{content.personal.title || 'Votre titre'}</div>
-          <div style={{ height: 1, background: 'var(--ink)', margin: '10px 0' }} />
-          <div style={{ fontSize: 9, color: 'var(--ink-mute)' }}>{[content.personal.email, content.personal.phone, content.personal.location].filter(Boolean).join(' · ')}</div>
-
-          {content.summary && <Section title="Résumé"><div style={{ fontSize: 9, lineHeight: 1.6 }}>{content.summary}</div></Section>}
-
-          {content.experience.length > 0 && (
-            <Section title="Expérience">
-              {content.experience.map((exp, i) => (
-                <div key={i} style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 700, fontSize: 9 }}>{exp.job}</div>
-                  <div style={{ fontSize: 8, color: 'var(--ink-mute)' }}>{exp.company}{exp.period ? ` · ${exp.period}` : ''}</div>
-                  {exp.achievements.map((a, j) => <div key={j} style={{ fontSize: 8, marginLeft: 8, marginTop: 2 }}>• {a}</div>)}
-                </div>
-              ))}
-            </Section>
-          )}
-
-          {content.education.length > 0 && (
-            <Section title="Formation">
-              {content.education.map((edu, i) => (
-                <div key={i} style={{ marginBottom: 8 }}>
-                  <div style={{ fontWeight: 700, fontSize: 9 }}>{edu.degree}</div>
-                  <div style={{ fontSize: 8, color: 'var(--ink-mute)' }}>{edu.school}{edu.year ? ` · ${edu.year}` : ''}</div>
-                </div>
-              ))}
-            </Section>
-          )}
-
-          {(content.skills.hard.length > 0 || content.skills.soft.length > 0) && (
-            <Section title="Compétences">
-              <div style={{ fontSize: 9 }}>{content.skills.hard.join(' · ')}</div>
-              {content.skills.soft.length > 0 && <div style={{ fontSize: 9, color: 'var(--ink-mute)', marginTop: 4 }}>{content.skills.soft.join(' · ')}</div>}
-            </Section>
-          )}
-
-          {content.languages.length > 0 && (
-            <Section title="Langues">
-              <div style={{ fontSize: 9 }}>{content.languages.map(l => `${l.lang}${l.level ? ` (${l.level})` : ''}`).join(' · ')}</div>
-            </Section>
-          )}
+        <div style={{ width: 560 * 0.7, height: 794 * 0.7, border: '1px solid var(--line-soft)', borderRadius: 4, overflow: 'hidden', flexShrink: 0, margin: '0 auto' }}>
+          <iframe
+            key={templateId}
+            src={`/api/cvs/${cvId}/preview?t=${templateId}`}
+            style={{ width: 560, height: 794, border: 'none', transform: 'scale(0.7)', transformOrigin: 'top left' }}
+            title="CV Preview"
+          />
         </div>
 
         {/* Cover letter document */}
         {content.coverLetter && (
           <>
-            {/* Page break indicator */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0' }}>
               <div style={{ flex: 1, borderTop: '2px dashed var(--line-soft)' }} />
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-mute)', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap', padding: '2px 8px', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-pill)', background: 'var(--paper-deep)' }}>
@@ -354,15 +444,7 @@ export default function CVEditor({ cvId, initialContent }: { cvId: string; initi
         )}
       </div>
     </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginTop: 14 }}>
-      <div style={{ fontSize: 8, fontFamily: 'var(--font-mono)', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 6 }}>{title}</div>
-      {children}
-    </div>
+    </>
   );
 }
 

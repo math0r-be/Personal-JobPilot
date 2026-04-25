@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { generateCVContent } from '@/lib/ai';
+import { sanitizeForPrompt } from '@/lib/utils';
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const cv = await prisma.cv.findUnique({ where: { id: params.id } });
@@ -11,14 +12,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   try {
     const generatedContent = await generateCVContent({
-      name,
-      currentJob,
+      name: sanitizeForPrompt(name),
+      currentJob: sanitizeForPrompt(currentJob),
       experienceYears,
-      sector,
-      skills,
-      experiences,
-      education,
-      languages,
+      sector: sanitizeForPrompt(sector),
+      skills: sanitizeForPrompt(skills),
+      experiences: sanitizeForPrompt(experiences),
+      education: sanitizeForPrompt(education),
+      languages: sanitizeForPrompt(languages),
     });
 
     let parsed;
@@ -26,7 +27,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       const cleaned = generatedContent.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
       parsed = JSON.parse(cleaned);
     } catch {
-      parsed = { personal: { name, title: currentJob, email: '', phone: '', location: '' }, summary: '', experience: [], education: [], skills: { hard: skills.split(',').map((s: string) => s.trim()).filter(Boolean), soft: [] }, languages: [] };
+      parsed = { personal: { name: sanitizeForPrompt(name), title: sanitizeForPrompt(currentJob), email: '', phone: '', location: '' }, summary: '', experience: [], education: [], skills: { hard: (skills || '').split(',').map((s: string) => s.trim()).filter(Boolean), soft: [] }, languages: [] };
     }
 
     const updated = await prisma.cv.update({

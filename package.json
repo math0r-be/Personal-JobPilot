@@ -21,6 +21,8 @@
     "@react-pdf/renderer": "^3.4.0",
     "@types/nodemailer": "^6.4.17",
     "docx": "^9.6.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "next": "^14.2.25",
     "nodemailer": "^6.10.1",
     "openai": "^4.0.0",

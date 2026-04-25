@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const parsed = createCvSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { title = 'Mon CV', templateId = 'classic' } = parsed.data;
+  const { title = 'Mon CV', templateId = 'atlas' } = parsed.data;
 
   const cv = await prisma.cv.create({
     data: {

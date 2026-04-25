@@ -140,7 +140,7 @@ export default async function DashboardPage() {
                 previewName = c?.personal?.name || '';
                 previewJobTitle = c?.personal?.title || '';
               } catch { /* ignore */ }
-              return <CvCard key={cv.id} id={cv.id} title={cv.title} template={cv.templateId} score={87} updated="local" previewName={previewName} previewJobTitle={previewJobTitle} />;
+              return <CvCard key={cv.id} id={cv.id} title={cv.title} template={cv.templateId} score={cv.matchScore ?? 0} updated="local" previewName={previewName} previewJobTitle={previewJobTitle} />;
             })}
             <NewCvCard />
           </div>

@@ -1,6 +1,28 @@
 import nodemailer from 'nodemailer';
 import { prisma } from './db';
 
+let cachedTransporter: nodemailer.Transporter | null = null;
+let cachedConfigKey = '';
+
+function smtpConfigKey(c: { host: string; port: number; secure: boolean; user: string; pass: string }) {
+  return `${c.host}:${c.port}:${c.secure}:${c.user}:${c.pass}`;
+}
+
+async function getTransporter() {
+  const config = await getSmtpConfig();
+  if (!config?.host) return null;
+  const key = smtpConfigKey(config);
+  if (cachedTransporter && cachedConfigKey === key) return cachedTransporter;
+  cachedTransporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: { user: config.user, pass: config.pass },
+  });
+  cachedConfigKey = key;
+  return cachedTransporter;
+}
+
 export async function getSmtpConfig() {
   return prisma.smtpConfig.findUnique({ where: { id: 'active' } });
 }
@@ -21,12 +43,8 @@ export async function sendEmail(opts: {
     return { ok: false, error: 'SMTP non configuré' };
   }
 
-  const transporter = nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    auth: { user: config.user, pass: config.pass },
-  });
+  const transporter = await getTransporter();
+  if (!transporter) return { ok: false, error: 'SMTP non configuré' };
 
   try {
     await transporter.sendMail({
@@ -48,12 +66,8 @@ export async function sendTestEmail(to: string): Promise<{ ok: boolean; error?: 
     return { ok: false, error: 'SMTP non configuré' };
   }
 
-  const transporter = nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    auth: { user: config.user, pass: config.pass },
-  });
+  const transporter = await getTransporter();
+  if (!transporter) return { ok: false, error: 'SMTP non configuré' };
 
   try {
     await transporter.sendMail({

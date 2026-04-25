@@ -61,7 +61,12 @@ export default function LandingPage() {
     setSaving(true);
     setError('');
     try {
-      await updateAiConfig({ provider, apiKey, model });
+      await updateAiConfig({
+        provider,
+        apiKey: provider !== 'custom' ? apiKey : '',
+        baseUrl: provider === 'custom' ? apiKey : '',
+        model,
+      });
       setPhase('done');
       setTimeout(() => router.push('/dashboard'), 800);
     } catch (e) {

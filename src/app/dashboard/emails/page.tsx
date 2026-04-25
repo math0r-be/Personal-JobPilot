@@ -69,7 +69,7 @@ export default function EmailsPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginLeft: 16 }}>
                   {e.status === 'draft' && (
-                    <Link href={`/dashboard/emails/${e.id}`} style={{ display: 'inline-flex', alignItems: 'center', height: 28, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 11, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
+                    <Link href={`/dashboard/emails/${e.id}`} style={{ display: 'inline-flex', alignItems: 'center', height: 44, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', textDecoration: 'none', cursor: 'pointer' }}>
                       Éditer
                     </Link>
                   )}
@@ -79,7 +79,7 @@ export default function EmailsPage() {
                         await fetch('/api/emails/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emailId: e.id }) });
                         window.location.reload();
                       }}
-                      style={{ display: 'inline-flex', alignItems: 'center', height: 28, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 11, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', border: 'none', cursor: 'pointer' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', height: 44, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', border: 'none', cursor: 'pointer' }}
                     >
                       Envoyer
                     </button>

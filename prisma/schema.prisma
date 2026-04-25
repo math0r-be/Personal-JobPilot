@@ -14,6 +14,7 @@ model Profile {
   phone     String   @default("")
   location  String   @default("")
   summary   String   @default("")
+  photoUrl  String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -41,6 +42,21 @@ model SmtpConfig {
   updatedAt DateTime @updatedAt
 }
 
+model Cv {
+  id            String         @id @default(cuid())
+  title         String         @default("Mon CV")
+  content       String         @default("{}")
+  photo         String         @default("")
+  templateId    String         @default("classic")
+  jobPostingId  String?
+  jobPosting    JobPosting?    @relation(fields: [jobPostingId], references: [id])
+  coverLetters  CoverLetter[]
+  matchScore    Int?
+  isReference    Boolean       @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
 model CoverLetter {
   id           String      @id @default(cuid())
   title        String      @default("Lettre de motivation")
@@ -53,39 +69,30 @@ model CoverLetter {
   updatedAt    DateTime    @updatedAt
 }
 
-model Cv {
-  id            String         @id @default(cuid())
-  title         String         @default("Mon CV")
-  content       String         @default("{}")
-  templateId    String         @default("classic")
-  jobPostingId  String?
-  jobPosting    JobPosting?    @relation(fields: [jobPostingId], references: [id])
-  coverLetters  CoverLetter[]
-  matchScore    Int?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-}
-
 model JobPosting {
   id           String         @id @default(cuid())
-  title        String         @default("")
-  company      String         @default("")
-  location     String         @default("")
+  title        String        @default("")
+  company      String        @default("")
+  location     String        @default("")
   rawText      String
-  parsedData   String         @default("{}")
-  status       String         @default("new")
+  parsedData   String        @default("{}")
+  status       String        @default("new")
   cvs          Cv[]
   coverLetters CoverLetter[]
   emails       Email[]
-  notes        String         @default("")
+  notes        String        @default("")
   appliedAt    DateTime?
-  url          String         @default("")
+  url          String        @default("")
   source       String?
   salary       String?
   followUpDate DateTime?
   activities   ActivityLog[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+  @@index([followUpDate])
+  @@index([createdAt])
 }
 
 model ActivityLog {
@@ -95,6 +102,8 @@ model ActivityLog {
   type        String
   description String
   createdAt   DateTime   @default(now())
+
+  @@index([jobId])
 }
 
 model Email {
@@ -108,4 +117,7 @@ model Email {
   sentAt       DateTime?
   errorMsg     String?
   createdAt    DateTime    @default(now())
+
+  @@index([jobPostingId])
+  @@index([sentAt])
 }

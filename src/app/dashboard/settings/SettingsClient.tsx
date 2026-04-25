@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { updateProfile, updateAiConfig, testAiConnection, updateSmtpConfig, testSmtpEmail } from '@/actions/settings';
 
 interface Props {
-  initialProfile: { name: string; email: string; phone: string; location: string; summary: string };
+  initialProfile: { name: string; email: string; phone: string; location: string; summary: string; photoUrl: string };
   initialAiConfig: { provider: string; apiKey: string; baseUrl: string; model: string };
   initialSmtpConfig: { host: string; port: number; secure: boolean; user: string; pass: string; fromName: string; fromEmail: string };
+  referenceCvId: string | null;
 }
 
-export default function SettingsClient({ initialProfile, initialAiConfig, initialSmtpConfig }: Props) {
+export default function SettingsClient({ initialProfile, initialAiConfig, initialSmtpConfig, referenceCvId }: Props) {
   const [tab, setTab] = useState<'profile' | 'ai' | 'smtp'>('profile');
   const [saved, setSaved] = useState('');
 
@@ -36,7 +37,7 @@ export default function SettingsClient({ initialProfile, initialAiConfig, initia
           ))}
         </div>
 
-        {tab === 'profile' && <ProfileSection initial={initialProfile} onSave={showSaved} />}
+        {tab === 'profile' && <ProfileSection initial={initialProfile} onSave={showSaved} referenceCvId={referenceCvId} />}
         {tab === 'ai' && <AiSection initial={initialAiConfig} onSave={showSaved} />}
         {tab === 'smtp' && <SmtpSection initial={initialSmtpConfig} onSave={showSaved} />}
       </div>
@@ -44,16 +45,122 @@ export default function SettingsClient({ initialProfile, initialAiConfig, initia
   );
 }
 
-function ProfileSection({ initial, onSave }: { initial: Props['initialProfile']; onSave: (msg?: string) => void }) {
+function ProfileSection({ initial, onSave, referenceCvId }: { initial: Props['initialProfile']; onSave: (msg?: string) => void; referenceCvId: string | null }) {
   const [form, setForm] = useState(initial);
+  const [photoPreview, setPhotoPreview] = useState(initial.photoUrl || '');
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState('');
+  const photoRef = useRef<HTMLInputElement>(null);
+  const linkedinRef = useRef<HTMLInputElement>(null);
 
   const save = async () => {
     await updateProfile(form);
     onSave();
   };
 
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) return alert('Format requis: JPG, PNG ou WebP');
+    if (file.size > 2 * 1024 * 1024) return alert('Max 2MB');
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target?.result as string;
+      setPhotoPreview(base64);
+      try {
+        const res = await fetch('/api/photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photoUrl: base64 }),
+        });
+        if (!res.ok) throw new Error('Upload failed');
+      } catch {
+        alert('Erreur lors de l\'upload de la photo');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLinkedinImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') return alert('PDF requis');
+    if (file.size > 5 * 1024 * 1024) return alert('Max 5MB');
+
+    setImporting(true);
+    setImportStatus('Import en cours…');
+
+    const buffer = await file.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+
+    try {
+      const res = await fetch('/api/linkedin-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pdfBase64: base64 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Import failed');
+      setImportStatus(`✓ CV importé : ${data.title}`);
+      setTimeout(() => setImportStatus(''), 3000);
+    } catch (err) {
+      setImportStatus(`✗ Erreur: ${err instanceof Error ? err.message : 'Inconnu'}`);
+      setTimeout(() => setImportStatus(''), 5000);
+    } finally {
+      setImporting(false);
+      if (linkedinRef.current) linkedinRef.current.value = '';
+    }
+  };
+
   return (
     <Section title="Profil">
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 20 }}>
+        <div style={{ position: 'relative' }}>
+          <div style={{ width: 80, height: 80, borderRadius: 'var(--r-md)', background: 'var(--line-soft)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--line-soft)' }}>
+            {photoPreview ? (
+              <img src={photoPreview} alt="Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <span style={{ fontSize: 11, color: 'var(--ink-mute)' }}>Aucune</span>
+            )}
+          </div>
+          <button
+            onClick={() => photoRef.current?.click()}
+            style={{ position: 'absolute', bottom: -4, right: -4, width: 24, height: 24, borderRadius: '50%', background: 'var(--ink)', color: 'var(--paper-warm)', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            +
+          </button>
+          <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoChange} style={{ display: 'none' }} />
+          {form.photoUrl && (
+            <button
+              onClick={() => { setForm({ ...form, photoUrl: '' }); setPhotoPreview(''); }}
+              style={{ position: 'absolute', top: -8, right: -4, width: 20, height: 20, borderRadius: '50%', background: '#c00', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 4 }}>Photo de profil</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-mute)' }}>Utilisée dans les templates qui supportent l'image</div>
+        </div>
+      </div>
+
+      <Field label="Importer CV LinkedIn (PDF)">
+        <input ref={linkedinRef} type="file" accept="application/pdf" onChange={handleLinkedinImport} style={{ display: 'none' }} />
+        <button
+          onClick={() => linkedinRef.current?.click()}
+          disabled={importing}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, border: '1px solid var(--ink)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer', opacity: importing ? 0.5 : 1 }}
+        >
+          {importing ? 'Import…' : 'Importer PDF LinkedIn'}
+        </button>
+        {importStatus && (
+          <div style={{ marginTop: 8, fontSize: 11, color: importStatus.startsWith('✓') ? 'var(--good)' : '#c00' }}>{importStatus}</div>
+        )}
+      </Field>
+
       <Field label="Nom complet">
         <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} />
       </Field>
@@ -82,7 +189,13 @@ function AiSection({ initial, onSave }: { initial: Props['initialAiConfig']; onS
   const [testResult, setTestResult] = useState<{ ok: boolean; error?: string } | null>(null);
 
   const save = async () => {
-    await updateAiConfig(form);
+    const payload = {
+      provider: form.provider,
+      apiKey: form.provider !== 'custom' ? form.apiKey : '',
+      baseUrl: form.provider === 'custom' ? form.apiKey : '',
+      model: form.model,
+    };
+    await updateAiConfig(payload);
     onSave();
   };
 
@@ -153,7 +266,8 @@ function SmtpSection({ initial, onSave }: { initial: Props['initialSmtpConfig'];
   const [testResult, setTestResult] = useState<{ ok: boolean; error?: string } | null>(null);
 
   const save = async () => {
-    await updateSmtpConfig(form);
+    const { pass, ...rest } = form;
+    await updateSmtpConfig({ ...rest, ...(pass !== '__KEEP__' && { pass }) });
     onSave();
   };
 
@@ -169,7 +283,7 @@ function SmtpSection({ initial, onSave }: { initial: Props['initialSmtpConfig'];
   return (
     <Section title="Configuration SMTP">
       <p style={{ fontSize: 12, color: 'var(--ink-mute)', marginBottom: 16, lineHeight: 1.6 }}>
-        Configurez votre serveur SMTP pour envoyer des emails depuis l&apos;app. Gmail, Outlook, ou n&apos;importe quel provider SMTP.
+        Configurez votre serveur SMTP pour envoyer des emails depuis l'app. Gmail, Outlook, ou n'importe quel provider SMTP.
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14, marginBottom: 14 }}>
         <Field label="Serveur SMTP (host)">

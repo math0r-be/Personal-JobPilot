@@ -50,6 +50,8 @@ async function startNextServer() {
   console.log('Starting standalone server with DATABASE_URL:', process.env.DATABASE_URL);
 
   return new Promise((resolve, reject) => {
+    let resolved = false;
+
     const server = spawn('node', [serverPath], {
       env: { ...process.env, PORT: '3000' },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -58,7 +60,9 @@ async function startNextServer() {
     server.stdout.on('data', (data) => {
       const output = data.toString();
       console.log('Server:', output);
-      if (output.includes('Ready') || output.includes('3000')) {
+      if (!resolved && (output.includes('Ready') || output.includes('3000'))) {
+        resolved = true;
+        clearTimeout(timeout);
         resolve(server);
       }
     });
@@ -67,15 +71,29 @@ async function startNextServer() {
       console.error('Server error:', data.toString());
     });
 
-    server.on('error', reject);
+    server.on('error', (err) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        reject(err);
+      }
+    });
 
     server.on('exit', (code) => {
-      if (code !== 0) {
+      if (!resolved && code !== 0) {
+        resolved = true;
+        clearTimeout(timeout);
         reject(new Error(`Server exited with code ${code}`));
       }
     });
 
-    setTimeout(() => resolve(server), 5000);
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.log('Server startup timeout — resolving anyway');
+        resolve(server);
+      }
+    }, 5000);
   });
 }
 
@@ -111,6 +129,79 @@ app.whenReady().then(async () => {
     version: app.getVersion(),
     userDataPath: app.getPath('userData'),
   }));
+
+  ipcMain.handle('print-to-pdf', async (event, { cvId, templateId, title }) => {
+    const PRINT_TIMEOUT_MS = 30_000;
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+
+      const printWindow = new BrowserWindow({
+        width: 794,
+        height: 1123,
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+        },
+      });
+
+      const baseUrl = isDev ? 'http://localhost:3000' : 'http://localhost:3000';
+      const printUrl = `${baseUrl}/api/cvs/${cvId}/preview?t=${templateId}&print=1`;
+
+      const printTimeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          printWindow.close();
+          reject(new Error('Print preview timed out after 30 seconds'));
+        }
+      }, PRINT_TIMEOUT_MS);
+
+      printWindow.loadURL(printUrl);
+
+      printWindow.webContents.on('did-finish-load', async () => {
+        if (resolved) return;
+        try {
+          const pdfData = await printWindow.webContents.printToPDF({
+            printBackground: true,
+            pageSize: 'A4',
+            margins: { top: 0, bottom: 0, left: 0, right: 0 },
+          });
+
+          const { filePath } = await require('electron').dialog.showSaveDialog({
+            defaultPath: `${(title || 'CV').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+            filters: [{ name: 'PDF', extensions: ['pdf'] }],
+          });
+
+          if (filePath) {
+            fs.writeFileSync(filePath, pdfData);
+            resolved = true;
+            clearTimeout(printTimeout);
+            printWindow.close();
+            resolve({ success: true, path: filePath });
+          } else {
+            resolved = true;
+            clearTimeout(printTimeout);
+            printWindow.close();
+            resolve({ success: false, cancelled: true });
+          }
+        } catch (err) {
+          resolved = true;
+          clearTimeout(printTimeout);
+          printWindow.close();
+          reject(err);
+        }
+      });
+
+      printWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(printTimeout);
+          printWindow.close();
+          reject(new Error(`Load failed: ${errorDescription} (${errorCode})`));
+        }
+      });
+    });
+  });
 
   copyDatabaseIfNeeded();
 

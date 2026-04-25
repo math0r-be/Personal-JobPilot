@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 
 export default async function NewCvPage({ searchParams }: { searchParams: { template?: string } }) {
-  const templateId = searchParams.template || 'classic';
+  const templateId = searchParams.template || 'atlas';
   const cv = await prisma.cv.create({
     data: {
       title: 'Nouveau CV',

@@ -41,5 +41,7 @@ export interface CV {
 export interface Template {
   id: string;
   name: string;
+  category: string;
+  photo: boolean;
   accent: string;
 }

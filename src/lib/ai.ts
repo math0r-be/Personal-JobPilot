@@ -40,11 +40,6 @@ export async function getModel(): Promise<string> {
   return config?.model || preset.defaultModel;
 }
 
-export async function isAiConfigured(): Promise<boolean> {
-  const config = await prisma.aiConfig.findUnique({ where: { id: 'active' } });
-  return !!(config?.apiKey);
-}
-
 const GENERATE_CV_PROMPT = `Tu es un expert en rédaction de CV professionnels français.
 
 Tu收到的 les informations brutes d'un candidat et transforme-les en contenu de CV professionnel.
@@ -94,25 +89,40 @@ function stripJson(raw: string): string {
   return raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/^\s+/, '').replace(/\s+$/, '');
 }
 
-const MATCH_CV_PROMPT = `Tu es un expert en adaptation de CV. Une offre d'emploi et un CV source sont fournis. Retourne un CV adaptéespecifiquement à cette offre.
+const MATCH_CV_PROMPT = `Tu es un expert en analyse de CV et adaptation aux offres d'emploi.
 
-**Règles :**
-1. Met en avant les compétences matching
-2. Adapte le résumé/accroche
-3. Réorganise l'expérience pour valoriser les experiences les plus pertinentes
-4. Ne mens pas, n'invente pas
-5. Souligne les mots-clés de l'offre presentes dans le CV
+**Étape 1 — Évaluation honnête :**
+Compare le CV source avec l'offre d'emploi. Calcule un matchScore de 0 à 100 selon :
+- Compétences techniques demandées vs compétences réelles (40%)
+- Années d'expérience demandées vs réelles (25%)
+- Matching titre/rôle (20%)
+- Soft skills et culture (15%)
+
+Sois HONNÊTE. Un score de 70+ signifie匹配 réelle, pas perfection.
+
+**Étape 2 — Adaptation :**
+Adapte le CV à l'offre en valorisant les points forts matching et en réorganisant l'expérience.
+
+**Étape 3 — Cover letter honnête :**
+La cover letter doit :
+- Valoriser les forces REELLES qui matchent
+- Adresse HONNÊTEMENT les lacunes (sans exagérer)
+- Proposer des solutions concrètes pour pallier les manques
+- Ne jamais mentir sur l'expérience ou les compétences
 
 **Format de sortie (JSON uniquement, sans markdown) :**
 {
+  "matchScore": 75,
+  "matchedSkills": ["Python", "React", "Gestion d'équipe"],
+  "missingSkills": ["Kubernetes", "AWS production"],
+  "yearsMatch": "5 ans requis vs 4 ans réelle - léger déficit",
   "personal": { "name": "", "title": "", "email": "", "phone": "", "location": "" },
   "summary": "",
   "experience": [{ "company": "", "job": "", "period": "", "achievements": [] }],
   "education": [{ "school": "", "degree": "", "year": "" }],
   "skills": { "hard": [], "soft": [] },
   "languages": [{ "lang": "", "level": "" }],
-  "coverLetter": "Madame, Monsieur,\n\n...",
-  "matchScore": 0
+  "coverLetter": "Madame, Monsieur,\n\n..."
 }`;
 
 export async function adaptCV(cvContent: string, jobPostingText: string): Promise<string> {

@@ -1,56 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAiClient, getModel } from '@/lib/ai';
-
-function parseJson(raw: string): unknown {
-  const stripped = raw
-    .replace(/```json\s*/gi, '')
-    .replace(/```\s*/g, '')
-    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '')
-    .trim();
-  return JSON.parse(stripped);
-}
-
-const EXTRACT_PROMPT = `Tu es un expert en analyse de CV. Extrais les informations du texte brut de ce CV et retourne un JSON structuré.
-
-RÈGLE : Ne complète pas, n'invente pas. Si une info est absente, laisse le champ vide.
-
-Réponds UNIQUEMENT avec ce JSON valide (sans markdown) :
-{
-  "personal": {
-    "name": "",
-    "title": "",
-    "email": "",
-    "phone": "",
-    "location": ""
-  },
-  "summary": "",
-  "experience": [
-    {
-      "company": "",
-      "job": "",
-      "period": "",
-      "achievements": []
-    }
-  ],
-  "education": [
-    {
-      "school": "",
-      "degree": "",
-      "year": ""
-    }
-  ],
-  "skills": {
-    "hard": [],
-    "soft": []
-  },
-  "languages": [
-    {
-      "lang": "",
-      "level": ""
-    }
-  ]
-}`;
+import { parseJson } from '@/lib/utils';
+import { EXTRACT_CV_PROMPT } from '@/lib/prompts';
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,7 +28,7 @@ export async function POST(req: NextRequest) {
     const response = await client.chat.completions.create({
       model,
       messages: [
-        { role: 'system', content: EXTRACT_PROMPT },
+        { role: 'system', content: EXTRACT_CV_PROMPT },
         { role: 'user', content: rawText.slice(0, 8000) },
       ],
       max_tokens: 2000,
@@ -94,7 +46,7 @@ export async function POST(req: NextRequest) {
       data: {
         title,
         content: JSON.stringify(content),
-        templateId: 'classic',
+        templateId: 'atlas',
       },
     });
 
