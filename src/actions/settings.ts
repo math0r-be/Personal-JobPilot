@@ -10,26 +10,51 @@ import { z } from 'zod';
 
 export async function getProfile() {
   const profile = await prisma.profile.findUnique({ where: { id: 'local' } });
-  return profile ?? { id: 'local', name: '', email: '', phone: '', location: '', summary: '' };
+  return profile ?? { id: 'local', name: '', email: '', phone: '', location: '', summary: '', photoUrl: '' };
 }
 
 export async function updateProfile(data: z.infer<typeof profileSchema>) {
   const parsed = profileSchema.safeParse(data);
-  if (!parsed.success) throw new Error('Données invalides');
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
-  const { name, email, phone, location, summary } = parsed.data;
+  const { name, email, phone, location, summary, photoUrl } = parsed.data;
   return prisma.profile.upsert({
     where: { id: 'local' },
-    create: { id: 'local', name: name ?? '', email: email ?? '', phone: phone ?? '', location: location ?? '', summary: summary ?? '' },
+    create: { id: 'local', name: name ?? '', email: email ?? '', phone: phone ?? '', location: location ?? '', summary: summary ?? '', photoUrl: photoUrl ?? '' },
     update: {
       ...(name !== undefined && { name }),
       ...(email !== undefined && { email }),
       ...(phone !== undefined && { phone }),
       ...(location !== undefined && { location }),
       ...(summary !== undefined && { summary }),
+      ...(photoUrl !== undefined && { photoUrl }),
     },
   });
 }
+
+export async function getReferenceCv() {
+  const cv = await prisma.cv.findFirst({ where: { isReference: true } });
+  return cv ?? null;
+}
+
+export async function setReferenceCv(cvId: string) {
+  await prisma.cv.updateMany({ where: {}, data: { isReference: false } });
+  return prisma.cv.update({ where: { id: cvId }, data: { isReference: true } });
+}
+
+const EXTRACT_LINKEDIN_PROMPT = `Tu es un expert en analyse de CV LinkedIn PDF. Extrais les informations et retourne un JSON structuré.
+
+RÈGLE ABSOLUE : Ne jamais inventer. Si une info est absente, champ vide.
+
+Réponds UNIQUEMENT avec ce JSON (sans markdown) :
+{
+  "personal": { "name": "", "title": "", "email": "", "phone": "", "location": "" },
+  "summary": "",
+  "experience": [{ "company": "", "job": "", "period": "", "achievements": [] }],
+  "education": [{ "school": "", "degree": "", "year": "" }],
+  "skills": { "hard": [], "soft": [] },
+  "languages": [{ "lang": "", "level": "" }]
+}`;
 
 // AI Config
 
@@ -40,7 +65,7 @@ export async function getAiConfig() {
 
 export async function updateAiConfig(data: z.infer<typeof aiConfigSchema>) {
   const parsed = aiConfigSchema.safeParse(data);
-  if (!parsed.success) throw new Error('Données invalides');
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
   const { provider, apiKey, baseUrl, model } = parsed.data;
   return prisma.aiConfig.upsert({
@@ -76,15 +101,18 @@ export async function testAiConnection(): Promise<{ ok: boolean; error?: string 
 export async function getSmtpConfig() {
   const config = await prisma.smtpConfig.findUnique({ where: { id: 'active' } });
   if (!config) return { id: 'active', host: '', port: 587, secure: false, user: '', pass: '', fromName: '', fromEmail: '' };
-  const { pass, ...safe } = config;
-  return { ...safe, pass: pass ? '********' : '' };
+  // Ne jamais renvoyer le mot de passe réel au client. On indique juste s'il est configuré.
+  return { id: 'active', host: config.host, port: config.port, secure: config.secure, user: config.user, pass: config.pass ? '__KEEP__' : '', fromName: config.fromName, fromEmail: config.fromEmail };
 }
 
 export async function updateSmtpConfig(data: z.infer<typeof smtpConfigSchema>) {
   const parsed = smtpConfigSchema.safeParse(data);
-  if (!parsed.success) throw new Error('Données invalides');
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
   const { host, port, secure, user, pass, fromName, fromEmail } = parsed.data;
+  // Ne met à jour le mot de passe que si l'utilisateur a fourni une vraie nouvelle valeur
+  // (pas le placeholder "********" qui indique que le champ n'a pas été modifié)
+  const shouldUpdatePass = pass !== undefined && pass !== '__KEEP__';
   return prisma.smtpConfig.upsert({
     where: { id: 'active' },
     create: { id: 'active', host: host ?? '', port: port ?? 587, secure: secure ?? false, user: user ?? '', pass: pass ?? '', fromName: fromName ?? '', fromEmail: fromEmail ?? '' },
@@ -93,7 +121,7 @@ export async function updateSmtpConfig(data: z.infer<typeof smtpConfigSchema>) {
       ...(port !== undefined && { port }),
       ...(secure !== undefined && { secure }),
       ...(user !== undefined && { user }),
-      ...(pass !== undefined && { pass }),
+      ...(shouldUpdatePass && { pass }),
       ...(fromName !== undefined && { fromName }),
       ...(fromEmail !== undefined && { fromEmail }),
     },
