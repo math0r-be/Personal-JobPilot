@@ -1,5 +1,22 @@
 import OpenAI from 'openai';
 import { prisma } from './db';
+import { parseJson } from './utils';
+
+function stripFences(raw: string): string {
+  return raw
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '')
+    .trim();
+}
+import {
+  GENERATE_CV_PROMPT,
+  MATCH_CV_PROMPT,
+  PARSE_JOB_PROMPT,
+  EMAIL_COVER_LETTER_PROMPT,
+  INTERVIEW_PREP_PROMPT,
+  EMAIL_SUBJECT_PROMPT,
+} from './prompts';
 
 const PROVIDER_PRESETS: Record<string, { baseUrl: string; defaultModel: string }> = {
   openrouter: {
@@ -40,27 +57,6 @@ export async function getModel(): Promise<string> {
   return config?.model || preset.defaultModel;
 }
 
-const GENERATE_CV_PROMPT = `Tu es un expert en rédaction de CV professionnels français.
-
-Tu收到的 les informations brutes d'un candidat et transforme-les en contenu de CV professionnel.
-
-**Règles :**
-1. Verbes d'action forts (dirigé, piloté, optimisé...)
-2. Quantifie les réalisations (% , $, nb)
-3. 2 lignes max par poste
-4. Ordre chronologique inverse
-5. Ne rien inventer
-
-**Format de sortie (JSON uniquement, sans markdown) :**
-{
-  "personal": { "name": "", "title": "", "email": "", "phone": "", "location": "" },
-  "summary": "",
-  "experience": [{ "company": "", "job": "", "period": "", "achievements": [] }],
-  "education": [{ "school": "", "degree": "", "year": "" }],
-  "skills": { "hard": [], "soft": [] },
-  "languages": [{ "lang": "", "level": "" }]
-}`;
-
 export async function generateCVContent(input: {
   name: string;
   currentJob: string;
@@ -82,48 +78,8 @@ export async function generateCVContent(input: {
     max_tokens: 2000,
     temperature: 0.7,
   });
-  return stripJson(response.choices[0]?.message?.content ?? '{}');
+  return stripFences(response.choices[0]?.message?.content ?? '{}');
 }
-
-function stripJson(raw: string): string {
-  return raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').replace(/^\s+/, '').replace(/\s+$/, '');
-}
-
-const MATCH_CV_PROMPT = `Tu es un expert en analyse de CV et adaptation aux offres d'emploi.
-
-**Étape 1 — Évaluation honnête :**
-Compare le CV source avec l'offre d'emploi. Calcule un matchScore de 0 à 100 selon :
-- Compétences techniques demandées vs compétences réelles (40%)
-- Années d'expérience demandées vs réelles (25%)
-- Matching titre/rôle (20%)
-- Soft skills et culture (15%)
-
-Sois HONNÊTE. Un score de 70+ signifie匹配 réelle, pas perfection.
-
-**Étape 2 — Adaptation :**
-Adapte le CV à l'offre en valorisant les points forts matching et en réorganisant l'expérience.
-
-**Étape 3 — Cover letter honnête :**
-La cover letter doit :
-- Valoriser les forces REELLES qui matchent
-- Adresse HONNÊTEMENT les lacunes (sans exagérer)
-- Proposer des solutions concrètes pour pallier les manques
-- Ne jamais mentir sur l'expérience ou les compétences
-
-**Format de sortie (JSON uniquement, sans markdown) :**
-{
-  "matchScore": 75,
-  "matchedSkills": ["Python", "React", "Gestion d'équipe"],
-  "missingSkills": ["Kubernetes", "AWS production"],
-  "yearsMatch": "5 ans requis vs 4 ans réelle - léger déficit",
-  "personal": { "name": "", "title": "", "email": "", "phone": "", "location": "" },
-  "summary": "",
-  "experience": [{ "company": "", "job": "", "period": "", "achievements": [] }],
-  "education": [{ "school": "", "degree": "", "year": "" }],
-  "skills": { "hard": [], "soft": [] },
-  "languages": [{ "lang": "", "level": "" }],
-  "coverLetter": "Madame, Monsieur,\n\n..."
-}`;
 
 export async function adaptCV(cvContent: string, jobPostingText: string): Promise<string> {
   const client = await getAiClient();
@@ -137,20 +93,8 @@ export async function adaptCV(cvContent: string, jobPostingText: string): Promis
     max_tokens: 2500,
     temperature: 0.7,
   });
-  return stripJson(response.choices[0]?.message?.content ?? cvContent);
+  return stripFences(response.choices[0]?.message?.content ?? '{}');
 }
-
-const PARSE_JOB_PROMPT = `Tu es un expert en analyse d'offres d'emploi. Parse le texte ci-dessous et extrais les informations structurees.
-
-**Format de sortie (JSON uniquement) :**
-{
-  "title": "",
-  "company": "",
-  "location": "",
-  "skills": [],
-  "requirements": [],
-  "responsibilities": []
-}`;
 
 export async function parseJobPosting(rawText: string): Promise<string> {
   const client = await getAiClient();
@@ -164,23 +108,8 @@ export async function parseJobPosting(rawText: string): Promise<string> {
     max_tokens: 1500,
     temperature: 0.3,
   });
-  return stripJson(response.choices[0]?.message?.content ?? '{}');
+  return stripFences(response.choices[0]?.message?.content ?? '{}');
 }
-
-const EMAIL_COVER_LETTER_PROMPT = `Tu es un expert en rédaction de lettres de motivation. Génère le corps d'un email de candidature professionnel en français.
-
-**Règles :**
-1. Accroche personalizee (mentionne le poste et l'entreprise)
-2. Paragraphes courts (3-4 lignes max)
-3. Valorise 2-3 compétences clés matching l'offre
-4. Ton professionnel mais pas froid
-5. Formule de politesse finale
-
-**Format de sortie (JSON uniquement) :**
-{
-  "subject": "Candidature au poste de [TITRE] - [NOM PRENOM]",
-  "body": "Corps de l'email au format texte avec sauts de ligne"
-}`;
 
 export async function generateEmailBody(
   candidateName: string,
@@ -201,22 +130,19 @@ export async function generateEmailBody(
     temperature: 0.7,
   });
   try {
-    const raw = stripJson(response.choices[0]?.message?.content ?? '{}');
-    const parsed = JSON.parse(raw);
-    return { subject: parsed.subject ?? `Candidature au poste de ${jobTitle}`, body: parsed.body ?? '' };
+    const raw = response.choices[0]?.message?.content ?? '{}';
+    const parsed = parseJson(raw) as { subject?: string; body?: string };
+    return {
+      subject: parsed.subject ?? `Candidature au poste de ${jobTitle}`,
+      body: parsed.body ?? '',
+    };
   } catch {
-    return { subject: `Candidature au poste de ${jobTitle}`, body: stripJson(response.choices[0]?.message?.content ?? '') };
+    return {
+      subject: `Candidature au poste de ${jobTitle}`,
+      body: response.choices[0]?.message?.content ?? '',
+    };
   }
 }
-
-const INTERVIEW_PREP_PROMPT = `Tu es un expert en préparation d'entretiens d'embauche. À partir d'une offre d'emploi et d'un CV, génère 10 questions d'entretien pertinentes avec des hints de réponse.
-
-**Format de sortie (JSON uniquement, sans markdown) :**
-{
-  "questions": [
-    { "question": "...", "hint": "..." }
-  ]
-}`;
 
 export async function generateInterviewPrep(parsedData: string, cvContent: string): Promise<string> {
   const client = await getAiClient();
@@ -230,19 +156,8 @@ export async function generateInterviewPrep(parsedData: string, cvContent: strin
     max_tokens: 2000,
     temperature: 0.7,
   });
-  return stripJson(response.choices[0]?.message?.content ?? '{"questions":[]}');
+  return stripFences(response.choices[0]?.message?.content ?? '{"questions":[]}');
 }
-
-const EMAIL_SUBJECT_PROMPT = `Tu es un expert en rédaction d'emails de candidature. Génère un objet d'email court et percutant.
-
-**Règles :**
-1. Maximum 60 caractères
-2. Mentionne le poste
-3. Mentionne l'entreprise (ou "votre entreprise")
-4. Pas de "Candidature au poste de" — garde direct et impactant
-
-**Format de sortie (JSON uniquement, sans markdown) :**
-{ "subject": "Objet de l'email" }`;
 
 export async function generateEmailSubject(jobTitle: string, company: string, applicantName: string): Promise<string> {
   const client = await getAiClient();
@@ -257,8 +172,8 @@ export async function generateEmailSubject(jobTitle: string, company: string, ap
     temperature: 0.7,
   });
   try {
-    const raw = stripJson(response.choices[0]?.message?.content ?? '{}');
-    const parsed = JSON.parse(raw);
+    const raw = response.choices[0]?.message?.content ?? '{}';
+    const parsed = parseJson(raw) as { subject?: string };
     return parsed.subject ?? `Candidature — ${jobTitle}`;
   } catch {
     return `Candidature — ${jobTitle}`;
