@@ -40,7 +40,7 @@ export default function LandingPage() {
   const checkConfigured = async () => {
     try {
       const data = await getAiConfig();
-      if (data.apiKey || data.provider === 'ollama' || data.baseUrl) {
+      if (data.apiKey || (data.provider === 'ollama' && data.baseUrl)) {
         router.push('/dashboard');
         return;
       }
