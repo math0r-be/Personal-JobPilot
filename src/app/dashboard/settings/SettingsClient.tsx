@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import Sidebar from '@/components/Sidebar';
+import OllamaModelSelect from '@/components/OllamaModelSelect';
 import { updateProfile, updateAiConfig, testAiConnection, updateSmtpConfig, testSmtpEmail } from '@/actions/settings';
 
 interface Props {
@@ -239,7 +240,10 @@ function AiSection({ initial, onSave }: { initial: Props['initialAiConfig']; onS
         )}
 
         <Field label="Modèle">
-          <input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} placeholder={PRESETS[form.provider]?.defaultModel || 'model name'} style={inputStyle} />
+          {form.provider === 'ollama'
+            ? <OllamaModelSelect value={form.model} onChange={m => setForm({ ...form, model: m })} />
+            : <input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} placeholder={PRESETS[form.provider]?.defaultModel || 'model name'} style={inputStyle} />
+          }
         </Field>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
