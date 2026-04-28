@@ -12,8 +12,9 @@ declare global {
   }
 }
 
-export default function ExportButtons({ cvId, hasCoverLetter, templateId = 'atlas', title = 'CV' }: { cvId: string; hasCoverLetter: boolean; templateId?: string; title?: string }) {
+export default function ExportButtons({ cvId, hasCoverLetter, templateId = 'atlas', title = 'CV', coverLetter = '' }: { cvId: string; hasCoverLetter: boolean; templateId?: string; title?: string; coverLetter?: string }) {
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [isDocxLoading, setIsDocxLoading] = useState(false);
 
   const download = (url: string) => {
     const a = document.createElement('a');
@@ -34,9 +35,25 @@ export default function ExportButtons({ cvId, hasCoverLetter, templateId = 'atla
       } finally {
         setIsPdfLoading(false);
       }
-    } else {
-      download(`/api/cvs/${cvId}/export/pdf`);
+      return;
     }
+
+    setIsPdfLoading(true);
+    download(`/api/cvs/${cvId}/export/pdf`);
+    setTimeout(() => setIsPdfLoading(false), 2000);
+  };
+
+  const handleDocx = async () => {
+    setIsDocxLoading(true);
+    download(`/api/cvs/${cvId}/export`);
+    setTimeout(() => setIsDocxLoading(false), 1000);
+  };
+
+  const handleCoverLetterPdf = async () => {
+    if (!coverLetter) return;
+    setIsPdfLoading(true);
+    download(`/api/cvs/${cvId}/export/cover-letter-pdf`);
+    setTimeout(() => setIsPdfLoading(false), 2000);
   };
 
   const btnStyle = {
@@ -52,13 +69,15 @@ export default function ExportButtons({ cvId, hasCoverLetter, templateId = 'atla
       <button onClick={handlePdf} disabled={isPdfLoading} style={{ ...btnStyle, opacity: isPdfLoading ? 0.6 : 1 }}>
         {isPdfLoading ? '…' : '↓'} PDF
       </button>
-      <button onClick={() => download(`/api/cvs/${cvId}/export`)} style={btnStyle}>↓ Word</button>
+      <button onClick={handleDocx} disabled={isDocxLoading} style={{ ...btnStyle, opacity: isDocxLoading ? 0.6 : 1 }}>
+        {isDocxLoading ? '…' : '↓'} Word
+      </button>
 
       {hasCoverLetter && (
         <>
           <span style={{ width: 1, height: 20, background: 'var(--line-soft)', margin: '0 4px' }} />
           <span style={{ fontSize: 10, color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', marginRight: 2 }}>Lettre</span>
-          <button onClick={() => download(`/api/cvs/${cvId}/export/cover-letter-pdf`)} style={btnStyle}>↓ PDF</button>
+          <button onClick={handleCoverLetterPdf} style={btnStyle}>↓ PDF</button>
           <button onClick={() => download(`/api/cvs/${cvId}/export/cover-letter-docx`)} style={btnStyle}>↓ Word</button>
         </>
       )}

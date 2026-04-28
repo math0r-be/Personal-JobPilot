@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AiProgressOverlay from '@/components/AiProgressOverlay';
 import { TEMPLATES } from '@/lib/templates';
 import ExportButtons from '@/components/ExportButtons';
@@ -48,6 +49,7 @@ export default function CVEditor({ cvId, initialContent, initialPhoto = '', init
   const [activeSection, setActiveSection] = useState('Infos');
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | ''>('');
+  const router = useRouter();
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
   const lastSaveRef = useRef<number>(0);
   const hasSavedOnceRef = useRef(false);
@@ -218,7 +220,7 @@ useEffect(() => {
     <>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid var(--line-soft)', background: 'var(--paper-warm)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/dashboard" style={{ fontSize: 13, color: 'var(--ink-mute)', textDecoration: 'none' }}>← Retour</Link>
+          <button onClick={() => router.back()} style={{ fontSize: 13, color: 'var(--ink-mute)', background: 'none', border: 'none', cursor: 'pointer' }}>← Retour</button>
           <span style={{ color: 'var(--line-soft)' }}>|</span>
           <span style={{ fontWeight: 600, fontSize: 14 }}>{cvTitle}</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 'var(--r-pill)', background: `${currentTemplate.accent}22`, border: `1px solid ${currentTemplate.accent}44`, fontSize: 10, color: currentTemplate.accent, fontFamily: 'var(--font-mono)' }}>
@@ -229,7 +231,7 @@ useEffect(() => {
           <Link href="/dashboard/match" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
             ✦ Adapter à une annonce
           </Link>
-          <ExportButtons cvId={cvId} hasCoverLetter={hasCoverLetter} templateId={templateId} title={cvTitle} />
+          <ExportButtons cvId={cvId} hasCoverLetter={hasCoverLetter} templateId={templateId} title={cvTitle} coverLetter={content.coverLetter || ''} />
         </div>
       </header>
     <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '200px 1fr 1fr', overflow: 'hidden', minHeight: 0 }}>
@@ -274,17 +276,17 @@ useEffect(() => {
             ✦ IA {showAI ? 'activée' : 'masquée'}
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={handleSave} disabled={isSaving} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 34, borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', opacity: isSaving ? 0.6 : 1 }}>
-              {isSaving ? '…' : 'Sauvegarder'}
+            <button onClick={handleSave} disabled={isSaving} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 34, borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: 'var(--paper-warm)', opacity: isSaving ? 0.6 : 1 }}>
+              {isSaving ? '… Sauvegarde…' : 'Sauvegarder'}
             </button>
             {saveStatus && (
-              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: saveStatus === 'error' ? 'var(--danger)' : 'var(--text-mute)' }}>
+              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: saveStatus === 'error' ? 'var(--danger)' : 'var(--good)', fontWeight: 600 }}>
                 {saveStatus === 'saving' ? '…' : saveStatus === 'saved' ? '✓' : '✕'}
               </span>
             )}
           </div>
           {saveStatus === 'saved' && (
-            <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-mute)', fontFamily: 'var(--font-mono)' }}>Auto-sauvegarde active</div>
+            <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--good)', fontFamily: 'var(--font-mono)' }}>✓ Sauvegardé</div>
           )}
         </div>
       </div>

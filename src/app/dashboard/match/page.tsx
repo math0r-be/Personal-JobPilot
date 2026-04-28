@@ -6,6 +6,28 @@ import Sidebar from '@/components/Sidebar';
 
 type Phase = 'input' | 'analyzing' | 'result';
 
+interface BulletScore {
+  role: string;
+  bullet: string;
+  confidence: number;
+  band: 'DIRECT' | 'TRANSFERABLE' | 'ADJACENT' | 'GAP';
+  analysis: { direct: number; transferable: number; adjacent: number; impact: number };
+  reframe: { before: string; after: string; reason: string } | null;
+}
+
+interface Gap {
+  skill: string;
+  confidence: number;
+  recommendation: 'cover_letter' | 'discovery' | 'omit';
+  suggestion: string;
+}
+
+interface Reframe {
+  before: string;
+  after: string;
+  reason: string;
+}
+
 interface MatchResult {
   score: number;
   keywords: string[];
@@ -15,6 +37,9 @@ interface MatchResult {
   adaptedSummary: string;
   cvId?: string;
   coverLetterId?: string;
+  bulletScores?: BulletScore[];
+  reframings?: Reframe[];
+  gaps?: Gap[];
 }
 
 const SAMPLE = `Senior Product Designer · Alan · Paris, CDI
@@ -334,6 +359,177 @@ function AnalyzingView({ text }: { text: string }) {
   );
 }
 
+function getBandColor(band: string): string {
+  switch (band) {
+    case 'DIRECT': return 'var(--good)';
+    case 'TRANSFERABLE': return '#22c55e';
+    case 'ADJACENT': return 'var(--warn)';
+    case 'GAP': return 'var(--danger)';
+    default: return 'var(--text-mute)';
+  }
+}
+
+function getBandLabel(band: string): string {
+  switch (band) {
+    case 'DIRECT': return 'DIRECT';
+    case 'TRANSFERABLE': return 'TRANSFERT';
+    case 'ADJACENT': return 'ADJACENT';
+    case 'GAP': return 'LACUNE';
+    default: return band;
+  }
+}
+
+function BulletScoreView({ bullet }: { bullet: BulletScore }) {
+  const color = getBandColor(bullet.band);
+  return (
+    <div style={{
+      background: 'var(--surface-2)',
+      border: `1px solid ${color}22`,
+      borderLeft: `3px solid ${color}`,
+      borderRadius: 6,
+      padding: '12px 16px',
+      marginBottom: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: 1,
+          color: color,
+          background: `${color}15`,
+          padding: '2px 8px',
+          borderRadius: 4,
+        }}>
+          {getBandLabel(bullet.band)} · {bullet.confidence}%
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>{bullet.role}</div>
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-soft)', lineHeight: 1.6, marginBottom: 8 }}>
+        {bullet.reframe ? bullet.reframe.after : bullet.bullet}
+      </div>
+      {bullet.reframe && (
+        <div style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 4,
+          padding: '8px 12px',
+          marginTop: 8,
+          fontSize: 11,
+        }}>
+          <div style={{ color: 'var(--text-mute)', marginBottom: 4 }}>
+            <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>{bullet.reframe.before}</span>
+          </div>
+          <div style={{ color: 'var(--good)' }}>→ {bullet.reframe.after}</div>
+          <div style={{ color: 'var(--text-mute)', fontSize: 10, marginTop: 4, fontStyle: 'italic' }}>
+            {bullet.reframe.reason}
+          </div>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+        <span style={{ color: 'var(--text-mute)' }}>Dir: {bullet.analysis.direct}%</span>
+        <span style={{ color: 'var(--text-mute)' }}>Trans: {bullet.analysis.transferable}%</span>
+        <span style={{ color: 'var(--text-mute)' }}>Adj: {bullet.analysis.adjacent}%</span>
+        <span style={{ color: 'var(--text-mute)' }}>Impact: {bullet.analysis.impact}%</span>
+      </div>
+    </div>
+  );
+}
+
+function GapsView({ gaps }: { gaps: Gap[] }) {
+  if (!gaps || gaps.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 14 }}>
+        LACUNES IDENTIFIÉES
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {gaps.map((gap, i) => {
+          const recColor = gap.recommendation === 'cover_letter' ? 'var(--accent)' :
+                          gap.recommendation === 'discovery' ? 'var(--warn)' : 'var(--text-mute)';
+          const recLabel = gap.recommendation === 'cover_letter' ? 'Cover Letter' :
+                          gap.recommendation === 'discovery' ? 'Discovery' : 'Omettre';
+          return (
+            <div key={i} style={{
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 6,
+              padding: '12px 16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{gap.skill}</div>
+                <div style={{
+                  fontSize: 9,
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  color: recColor,
+                  background: `${recColor}15`,
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                }}>
+                  {recLabel}
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-mute)', fontStyle: 'italic' }}>
+                {gap.suggestion}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ReframingsView({ reframings }: { reframings: Reframe[] }) {
+  if (!reframings || reframings.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 14 }}>
+        REFRAMINGS APPLIQUÉS
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {reframings.map((r, i) => (
+          <div key={i} style={{
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: '12px 16px',
+          }}>
+            <div style={{ fontSize: 11, color: 'var(--text-mute)', textDecoration: 'line-through', marginBottom: 4 }}>
+              {r.before}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--good)', marginBottom: 6 }}>
+              → {r.after}
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text-mute)', fontStyle: 'italic' }}>
+              {r.reason}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BulletScoresView({ bullets }: { bullets: BulletScore[] }) {
+  if (!bullets || bullets.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 14 }}>
+        ANALYSE PAR BULLET
+      </div>
+      {bullets.map((b, i) => (
+        <BulletScoreView key={i} bullet={b} />
+      ))}
+    </div>
+  );
+}
+
 function ScoreRing({ score }: { score: number }) {
   const [display, setDisplay] = useState(0);
   const size = 140;
@@ -374,7 +570,7 @@ function ScoreRing({ score }: { score: number }) {
 }
 
 function ResultView({ result, onReset }: { result: MatchResult; onReset: () => void }) {
-  const [tab, setTab] = useState<'cv' | 'cover'>('cv');
+  const [tab, setTab] = useState<'cv' | 'cover' | 'analyze'>('analyze');
   const label = result.score >= 80 ? 'Excellent Match' : result.score >= 65 ? 'Bon Match' : 'Match Partiel';
 
   return (
@@ -394,21 +590,23 @@ function ResultView({ result, onReset }: { result: MatchResult; onReset: () => v
             </div>
           )}
         </div>
-        {result.changes.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
-            {result.changes.map(c => (
-              <div key={c} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-soft)' }}>
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="var(--good)" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}><path d="M20 6L9 17l-5-5" /></svg>
-                {c}
+        {result.gaps && result.gaps.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-mute)', letterSpacing: 1 }}>LACUNES</div>
+            {result.gaps.slice(0, 3).map(g => (
+              <div key={g.skill} style={{ fontSize: 11, color: 'var(--text-soft)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: 3, background: g.recommendation === 'cover_letter' ? 'var(--accent)' : g.recommendation === 'discovery' ? 'var(--warn)' : 'var(--text-mute)' }} />
+                {g.skill}
               </div>
             ))}
+            {result.gaps.length > 3 && <div style={{ fontSize: 10, color: 'var(--text-mute)' }}>+{result.gaps.length - 3} autres</div>}
           </div>
         )}
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-        {([['cv', 'CV Adapté'], ['cover', 'Lettre de motivation']] as const).map(([id, lbl]) => (
+        {([['analyze', 'Analyse'], ['cv', 'CV Adapté'], ['cover', 'Cover Letter']] as const).map(([id, lbl]) => (
           <button key={id} onClick={() => setTab(id)} style={{
             height: 34, padding: '0 16px', borderRadius: 6,
             border: `1px solid ${tab === id ? 'var(--accent)' : 'var(--border)'}`,
@@ -428,6 +626,18 @@ function ResultView({ result, onReset }: { result: MatchResult; onReset: () => v
       </div>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 32 }}>
+        {tab === 'analyze' && (
+          <div>
+            <BulletScoresView bullets={result.bulletScores ?? []} />
+            <ReframingsView reframings={result.reframings ?? []} />
+            <GapsView gaps={result.gaps ?? []} />
+            {(!result.bulletScores || result.bulletScores.length === 0) && (!result.reframings || result.reframings.length === 0) && (!result.gaps || result.gaps.length === 0) && (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-mute)', fontSize: 13 }}>
+                Analyse détaillée non disponible pour ce match.
+              </div>
+            )}
+          </div>
+        )}
         {tab === 'cv' && (
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 14 }}>RÉSUMÉ PROFESSIONNEL — ADAPTÉ</div>

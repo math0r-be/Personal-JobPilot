@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 
 export default function CvListPage() {
   const [cvs, setCvs] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     fetch('/api/cvs').then(r => r.json()).then(data => { setCvs(Array.isArray(data) ? data : []); setLoading(false); });
@@ -53,9 +55,11 @@ export default function CvListPage() {
                     {String(cv.title || 'Sans titre')}
                   </Link>
                   <button onClick={() => {
-                    if (!confirm('Supprimer ce CV ?')) return;
-                    fetch(`/api/cvs/${cv.id}`, { method: 'DELETE' });
-                    setCvs(cvs.filter(c => c.id !== cv.id));
+                    (window as any).__confirmCallback = () => {
+                      fetch(`/api/cvs/${cv.id}`, { method: 'DELETE' });
+                      setCvs(cvs.filter(c => c.id !== cv.id));
+                    };
+                    router.push(`/dashboard/confirm?message=${encodeURIComponent('Supprimer ce CV ?')}`);
                   }} style={{ background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontSize: 12, padding: '0 4px' }}>×</button>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--ink-mute)', marginBottom: 12 }}>{String(cv.templateId)}</div>

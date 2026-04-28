@@ -56,7 +56,7 @@ function DraggableCard({
   menuOpenId: string | null;
   setMenuOpenId: (id: string | null) => void;
   onStatusChange: (id: string, status: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, company: string) => void;
 }) {
   const router = useRouter();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: job.id });
@@ -144,7 +144,7 @@ function DraggableCard({
               <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
               <button
                 onPointerDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); setMenuOpenId(null); onDelete(job.id); }}
+                onClick={e => { e.stopPropagation(); setMenuOpenId(null); onDelete(job.id, job.company || ''); }}
                 style={{ ...menuBtnStyle, color: 'var(--danger)' }}
               >
                 Supprimer
@@ -162,7 +162,7 @@ function DraggableCard({
             background: 'rgba(128,128,128,0.15)', color: 'var(--text-mute)',
             fontFamily: 'var(--font-mono)', letterSpacing: 0.5,
           }}>
-            7j+
+            +7j
           </span>
         )}
         {job.followUpDate && (() => {
@@ -176,7 +176,7 @@ function DraggableCard({
                 fontFamily: 'var(--font-mono)', letterSpacing: 0.5,
                 border: '1px solid var(--warn)',
               }}>
-                {daysLeft <= 0 ? 'Relance!' : `Relance J-${daysLeft}`}
+                {daysLeft <= 0 ? 'Relance !' : `Relance dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`}
               </span>
             );
           }
@@ -234,7 +234,7 @@ function DroppableColumn({
   menuOpenId: string | null;
   setMenuOpenId: (id: string | null) => void;
   onStatusChange: (id: string, status: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, company: string) => void;
 }) {
   const meta = STATUS_META[status as Status];
   const { isOver, setNodeRef } = useDroppable({ id: status });
@@ -315,6 +315,7 @@ export default function JobsKanban({ initialJobs }: { initialJobs: KanbanJob[] }
   const [activeId, setActiveId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const prevRef = useRef(jobs);
+  const router = useRouter();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -353,13 +354,15 @@ export default function JobsKanban({ initialJobs }: { initialJobs: KanbanJob[] }
     }).catch(() => setJobs(prevRef.current));
   };
 
-  const handleDelete = (jobId: string) => {
-    if (!confirm('Supprimer cette candidature ?')) return;
-    prevRef.current = jobs;
-    setJobs(prev => prev.filter(j => j.id !== jobId));
-    fetch(`/api/jobs/${jobId}`, { method: 'DELETE' })
-      .then(r => { if (!r.ok) setJobs(prevRef.current); })
-      .catch(() => setJobs(prevRef.current));
+  const handleDelete = (jobId: string, company: string) => {
+    (window as any).__confirmCallback = () => {
+      prevRef.current = jobs;
+      setJobs(prev => prev.filter(j => j.id !== jobId));
+      fetch(`/api/jobs/${jobId}`, { method: 'DELETE' })
+        .then(r => { if (!r.ok) setJobs(prevRef.current); })
+        .catch(() => setJobs(prevRef.current));
+    };
+    router.push(`/dashboard/confirm?message=${encodeURIComponent(`Supprimer la candidature chez ${company || 'cette entreprise'} ?`)}`);
   };
 
   return (

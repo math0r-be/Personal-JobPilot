@@ -82,6 +82,25 @@ export async function POST(req: NextRequest) {
       missingSkills: (parsedResult.missingSkills as string[]) ?? [],
       yearsMatch: (parsedResult.yearsMatch as string) ?? '',
       keywords: parsedResult.skills ? (parsedResult.skills as { hard?: string[] })?.hard ?? [] : [],
+      bulletScores: (parsedResult.bulletScores as Array<{
+        role: string;
+        bullet: string;
+        confidence: number;
+        band: string;
+        analysis: { direct: number; transferable: number; adjacent: number; impact: number };
+        reframe: { before: string; after: string; reason: string } | null;
+      }>) ?? [],
+      reframings: (parsedResult.reframings as Array<{
+        before: string;
+        after: string;
+        reason: string;
+      }>) ?? [],
+      gaps: (parsedResult.gaps as Array<{
+        skill: string;
+        confidence: number;
+        recommendation: string;
+        suggestion: string;
+      }>) ?? [],
       changes: [],
       coverLetter: coverLetterBody,
       adaptedTitle,

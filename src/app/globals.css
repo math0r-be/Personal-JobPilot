@@ -157,12 +157,26 @@ input, textarea, select {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-.btn-primary {
-  transition: transform 100ms, opacity 100ms;
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 34; padding: 0 14px;
+  border-radius: var(--r-md); font-size: 12; font-weight: 500;
+  border: 1px solid var(--border-bright); background: var(--surface-2);
+  color: var(--text); cursor: pointer;
+  transition: border-color 150ms var(--ease), background 150ms var(--ease), transform 100ms;
 }
-.btn-primary:active {
-  transform: scale(0.97);
-  opacity: 0.85;
+.btn:hover { border-color: var(--accent); background: var(--surface); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent); border-color: var(--accent); color: var(--paper-warm);
+  transition: transform 100ms, opacity 100ms, background 150ms var(--ease), border-color 150ms var(--ease);
+}
+.btn-primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); opacity: 0.9; }
+.btn-primary:active { transform: scale(0.97); opacity: 0.85; }
+
+.btn-danger {
+  background: var(--danger); border-color: var(--danger); color: var(--text);
 }
 
 @media (max-width: 768px) {

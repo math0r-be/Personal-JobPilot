@@ -274,7 +274,7 @@ export default async function DashboardPage() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, marginLeft: 12 }}>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-mute)' }}>
-                            {daysOld === 0 ? "Aujourd'hui" : `J+${daysOld}`}
+                            {daysOld === 0 ? "Aujourd'hui" : `Il y a ${daysOld} jour${daysOld > 1 ? 's' : ''}`}
                           </span>
                           <div style={{
                             display: 'inline-flex', alignItems: 'center',
