@@ -54,7 +54,7 @@ export function StatusChip({ status }: { status: string }) {
   const border = isAccent ? 'var(--accent)' : isDark ? 'var(--ink)' : isGood ? 'var(--good)' : 'var(--line-soft)';
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 8px', borderRadius: 'var(--r-pill)', background: bg, color, border: `1px solid ${border}`, fontSize: 10, fontWeight: 500, whiteSpace: 'nowrap' }}>
-      {isAccent && '✦ '}{status}
+      {isAccent && <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 2, flexShrink: 0 }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>}{status}
     </span>
   );
 }

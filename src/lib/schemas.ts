@@ -7,6 +7,12 @@ export const profileSchema = z.object({
   location: z.string().optional(),
   summary: z.string().optional(),
   photoUrl: z.string().optional(),
+  portfolioUrl: z.string().url().optional().or(z.string().max(0).optional()),
+  locale: z.enum(['fr-FR', 'fr-BE', 'en']).optional(),
+  targetRoles: z.string().optional(),
+  targetSalary: z.string().optional(),
+  dealBreakers: z.string().optional(),
+  narrative: z.string().optional(),
 });
 
 export const updateCvSchema = z.object({
@@ -49,6 +55,28 @@ export const createJobSchema = z.object({
   salary: z.string().optional(),
   notes: z.string().optional(),
   followUpDate: z.string().optional(),
+  score: z.number().min(0).max(5).optional(),
+  archetype: z.string().optional(),
+  legitimacy: z.string().optional(),
+});
+
+export const updateJobSchema = z.object({
+  title: z.string().optional(),
+  company: z.string().optional(),
+  location: z.string().optional(),
+  rawText: z.string().optional(),
+  parsedData: z.string().optional(),
+  status: z.enum(['new', 'applied', 'interview', 'offer', 'rejected', 'archived']).optional(),
+  notes: z.string().optional(),
+  appliedAt: z.string().nullable().optional(),
+  url: z.string().optional(),
+  source: z.string().nullable().optional(),
+  salary: z.string().nullable().optional(),
+  followUpDate: z.string().nullable().optional(),
+  score: z.number().min(0).max(5).nullable().optional(),
+  evaluation: z.string().optional(),
+  archetype: z.string().nullable().optional(),
+  legitimacy: z.string().nullable().optional(),
 });
 
 export const createCvSchema = z.object({
@@ -62,6 +90,10 @@ export const createEmailSchema = z.object({
   subject: z.string().min(1),
   body: z.string().min(1),
   status: z.enum(['draft', 'sent', 'error']).optional(),
+});
+
+export const evaluateJobSchema = z.object({
+  cvId: z.string().optional(),
 });
 
 export const matchSchema = z.object({

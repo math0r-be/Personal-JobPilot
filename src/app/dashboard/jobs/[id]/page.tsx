@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import AiProgressOverlay from '@/components/AiProgressOverlay';
+import EvaluationReport from '@/components/EvaluationReport';
 
 const STATUS_OPTIONS = ['new', 'applied', 'interview', 'offer', 'rejected', 'archived'];
 const STATUS_LABELS: Record<string, string> = {
@@ -33,6 +34,7 @@ const ACTIVITY_ICONS: Record<string, string> = {
   STATUS_CHANGED: '→',
   EMAIL_SENT: '✉',
   PARSED: '◎',
+  EVALUATED: '★',
   CV_SENT: '✦',
   NOTE_ADDED: '·',
 };
@@ -43,6 +45,8 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   const [parsedData, setParsedData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [parsing, setParsing] = useState(false);
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluation, setEvaluation] = useState<Record<string, unknown> | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [notes, setNotes] = useState('');
@@ -52,6 +56,8 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   const [source, setSource] = useState('');
   const [salary, setSalary] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
+  const [lastFollowUpAt, setLastFollowUpAt] = useState('');
+  const [followUpCount, setFollowUpCount] = useState(0);
   const [metaSaving, setMetaSaving] = useState(false);
 
   const [activities, setActivities] = useState<ActivityLog[]>([]);
@@ -69,12 +75,19 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
         if (data.parsedData && typeof data.parsedData === 'string') {
           try { setParsedData(JSON.parse(data.parsedData)); } catch {}
         }
+        if (data.evaluation && typeof data.evaluation === 'string' && data.evaluation !== '{}') {
+          try { setEvaluation(JSON.parse(data.evaluation)); } catch {}
+        }
         setNotes(data.notes ?? '');
         setSource(data.source ?? '');
         setSalary(data.salary ?? '');
         if (data.followUpDate) {
           setFollowUpDate(new Date(data.followUpDate).toISOString().split('T')[0]);
         }
+        if (data.lastFollowUpAt) {
+          setLastFollowUpAt(new Date(data.lastFollowUpAt).toISOString().split('T')[0]);
+        }
+        setFollowUpCount(data.followUpCount ?? 0);
         setLoading(false);
       });
 
@@ -84,6 +97,25 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
       .catch(() => {})
       .finally(() => setActivitiesLoaded(true));
   }, [params.id]);
+
+  const handleEvaluate = async () => {
+    setEvaluating(true);
+    try {
+      const res = await fetch(`/api/jobs/${params.id}/evaluate`, { method: 'POST' });
+      const data = await res.json();
+      if (data.evaluation && typeof data.evaluation === 'string' && data.evaluation !== '{}') {
+        try { setEvaluation(JSON.parse(data.evaluation)); } catch {}
+      }
+      setJob(data);
+    } catch (e) {
+      console.error('Evaluation failed', e);
+    } finally {
+      setEvaluating(false);
+    }
+    fetch(`/api/jobs/${params.id}/activity`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setActivities(data); });
+  };
 
   const handleParse = async () => {
     setParsing(true);
@@ -156,6 +188,33 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     setPrepLoading(false);
   };
 
+  const handleLogFollowUp = async () => {
+    await fetch(`/api/jobs/${params.id}/followup`, { method: 'POST' });
+    setFollowUpCount(c => c + 1);
+    setLastFollowUpAt(new Date().toISOString().split('T')[0]);
+    fetch(`/api/jobs/${params.id}/activity`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setActivities(data); });
+  };
+
+  const getFollowUpSuggestion = () => {
+    if (!typedJob) return null;
+    const now = Date.now();
+    const createdAt = new Date(typedJob.createdAt ?? now).getTime();
+    const daysSince = Math.floor((now - createdAt) / 86_400_000);
+    if (typedJob.status === 'applied') {
+      if (followUpCount === 0 && daysSince >= 7) return 'EN RETARD — Pas encore relancé après 7 jours';
+      if (followUpCount > 0) {
+        const lastFu = lastFollowUpAt ? new Date(lastFollowUpAt).getTime() : 0;
+        const daysSinceLast = Math.floor((now - lastFu) / 86_400_000);
+        if (daysSinceLast >= 7) return `Relance recommandée (dernière il y a ${daysSinceLast}j)`;
+      }
+    }
+    if (typedJob.status === 'responded') return 'Répondu — Relancez sous 1-3 jours';
+    if (typedJob.status === 'interview') return 'Entretien passé — Envoyez un merci sous 24h';
+    return null;
+  };
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--paper)', display: 'flex' }}>
@@ -182,6 +241,10 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     status: string;
     notes: string;
     url: string;
+    createdAt?: string;
+    score?: number | null;
+    archetype?: string | null;
+    legitimacy?: string | null;
     cvs: Array<{ id: string; title: string; matchScore?: number | null }>;
     emails: Array<{ id: string; subject: string; status: string; sentAt: string | null }>;
   };
@@ -236,20 +299,38 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                 </div>
               )}
 
-              {!parsedData && (
-                parsing ? (
-                  <div style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {!parsedData && !parsing && (
+                  <button onClick={handleParse} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', border: 'none', cursor: 'pointer' }}>
+                    ✦ Analyser
+                  </button>
+                )}
+                {parsing && (
+                  <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div className="skeleton" style={{ height: 22, width: '60%', borderRadius: 4 }} />
                     <div className="skeleton" style={{ height: 18, width: '40%', borderRadius: 4 }} />
                     <div className="skeleton" style={{ height: 18, width: '50%', borderRadius: 4 }} />
                   </div>
-                ) : (
-                  <button onClick={handleParse} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', border: 'none', cursor: 'pointer' }}>
-                    ✦ Analyser avec IA
-                  </button>
-                )
-              )}
+                )}
+                <button
+                  onClick={handleEvaluate}
+                  disabled={evaluating}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 36, padding: '0 14px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)', cursor: evaluating ? 'default' : 'pointer', opacity: evaluating ? 0.6 : 1 }}
+                >
+                  {evaluating ? 'Évaluation…' : '◎ Évaluer'}
+                </button>
+              </div>
             </div>
+
+            {/* Evaluation Report */}
+            {evaluation && (
+              <EvaluationReport
+                evaluation={evaluation}
+                score={typedJob.score}
+                archetype={typedJob.archetype}
+                legitimacy={typedJob.legitimacy}
+              />
+            )}
 
             {/* Informations */}
             <div style={{ background: 'var(--paper-warm)', border: '1px solid var(--line-soft)', borderRadius: 'var(--r-lg)', padding: 24, marginBottom: 16 }}>
@@ -275,6 +356,36 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
               <button onClick={handleMetaSave} disabled={metaSaving} style={{ height: 32, padding: '0 14px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', border: 'none', cursor: metaSaving ? 'default' : 'pointer', opacity: metaSaving ? 0.6 : 1 }}>
                 {metaSaving ? 'Sauvegarde…' : 'Sauvegarder'}
               </button>
+
+              {(typedJob.status === 'applied' || typedJob.status === 'interview' || typedJob.status === 'responded') && (() => {
+                const suggestion = getFollowUpSuggestion();
+                if (!suggestion) return null;
+                const isOverdue = suggestion.startsWith('EN RETARD');
+                return (
+                  <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: 'var(--r-md)',
+                      background: isOverdue ? 'var(--danger-dim)' : 'var(--accent-dim)',
+                      border: `1px solid ${isOverdue ? 'var(--danger)' : 'var(--accent)'}`,
+                      fontSize: 11,
+                      color: isOverdue ? 'var(--danger)' : 'var(--accent)',
+                    }}>
+                      {suggestion}
+                    </div>
+                    <button onClick={handleLogFollowUp} style={{
+                      height: 32, padding: '0 12px', borderRadius: 'var(--r-md)',
+                      fontSize: 11, fontWeight: 600,
+                      background: 'var(--ink)', color: 'var(--paper-warm)',
+                      border: 'none', cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      ✦ Noter relance ({followUpCount})
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Notes */}

@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const body = await request.json();
-  const { title, company, location, rawText, parsedData, status, notes, appliedAt, url, source, salary, followUpDate } = body;
+  const { title, company, location, rawText, parsedData, status, notes, appliedAt, url, source, salary, followUpDate, score, evaluation, archetype, legitimacy } = body;
 
   const job = await prisma.jobPosting.findUnique({ where: { id: params.id } });
   if (!job) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -38,6 +38,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       ...(source !== undefined && { source }),
       ...(salary !== undefined && { salary }),
       ...(followUpDate !== undefined && { followUpDate: followUpDate ? new Date(followUpDate) : null }),
+      ...(score !== undefined && { score: score !== null ? score : null }),
+      ...(evaluation !== undefined && { evaluation }),
+      ...(archetype !== undefined && { archetype: archetype !== null ? archetype : null }),
+      ...(legitimacy !== undefined && { legitimacy: legitimacy !== null ? legitimacy : null }),
     },
   });
 

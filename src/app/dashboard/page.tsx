@@ -110,18 +110,17 @@ export default async function DashboardPage() {
           </div>
 
           {/* Stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 36 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8, marginBottom: 32 }}>
             {STAT_CARDS.map(({ label, value, sub, color }) => (
               <div key={label} style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
-                borderTop: `2px solid ${color}`,
                 borderRadius: 8,
-                padding: '20px 22px',
+                padding: '14px 16px',
               }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 10 }}>{label}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 48, fontWeight: 500, fontStyle: 'italic', lineHeight: 1, color, marginBottom: 4 }}>{value}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>{sub}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1.2, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 6 }}>{label}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 500, fontStyle: 'italic', lineHeight: 1, color, marginBottom: 2 }}>{value}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-mute)' }}>{sub}</div>
               </div>
             ))}
           </div>
@@ -129,10 +128,13 @@ export default async function DashboardPage() {
           {/* CV section */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-mute)' }}>— MES CV</div>
-            <Link href="/dashboard/templates" style={{ fontSize: 11, color: 'var(--accent)', fontFamily: 'var(--font-mono)', letterSpacing: 0.5, textDecoration: 'none' }}>TEMPLATES →</Link>
+            <div style={{ display: 'flex', gap: 12 }}>
+              {cvs.length > 4 && <Link href="/dashboard/cv" style={{ fontSize: 11, color: 'var(--text-mute)', fontFamily: 'var(--font-mono)', letterSpacing: 0.5, textDecoration: 'none' }}>VOIR TOUS ({cvs.length}) →</Link>}
+              <Link href="/dashboard/templates" style={{ fontSize: 11, color: 'var(--accent)', fontFamily: 'var(--font-mono)', letterSpacing: 0.5, textDecoration: 'none' }}>TEMPLATES →</Link>
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridAutoRows: 258, gap: 14, marginBottom: 36 }}>
-            {cvs.map((cv) => {
+            {cvs.slice(0, 4).map((cv) => {
               let previewName = '';
               let previewJobTitle = '';
               try {
@@ -142,7 +144,7 @@ export default async function DashboardPage() {
               } catch { /* ignore */ }
               return <CvCard key={cv.id} id={cv.id} title={cv.title} template={cv.templateId} score={cv.matchScore ?? 0} updated="local" previewName={previewName} previewJobTitle={previewJobTitle} />;
             })}
-            <NewCvCard />
+            {cvs.length < 4 && <NewCvCard />}
           </div>
 
           {/* Onboarding — shown only when the user has no data at all */}

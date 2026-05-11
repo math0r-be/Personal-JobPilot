@@ -56,6 +56,12 @@ export default function ExportButtons({ cvId, hasCoverLetter, templateId = 'atla
     setTimeout(() => setIsPdfLoading(false), 2000);
   };
 
+  const handleBundle = async () => {
+    setIsPdfLoading(true);
+    download(`/api/cvs/${cvId}/export/bundle`);
+    setTimeout(() => setIsPdfLoading(false), 3000);
+  };
+
   const btnStyle = {
     display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px',
     borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500,
@@ -79,6 +85,7 @@ export default function ExportButtons({ cvId, hasCoverLetter, templateId = 'atla
           <span style={{ fontSize: 10, color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)', marginRight: 2 }}>Lettre</span>
           <button onClick={handleCoverLetterPdf} style={btnStyle}>↓ PDF</button>
           <button onClick={() => download(`/api/cvs/${cvId}/export/cover-letter-docx`)} style={btnStyle}>↓ Word</button>
+          <button onClick={handleBundle} style={{ ...btnStyle, background: 'var(--accent)', color: 'var(--paper-warm)', border: 'none' }}>↓ Bundle ZIP</button>
         </>
       )}
     </div>

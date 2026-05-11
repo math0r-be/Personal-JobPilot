@@ -51,8 +51,10 @@ function buildStyles(accent: string, hasPhoto: boolean, templateCategory: string
   });
 }
 
-function renderCV(content: CVContent, styles: PdfStyles, photo: string | null, template: { id: string; photo: boolean; accent: string; category: string }) {
-  const contact = [content.personal?.email, content.personal?.phone, content.personal?.location].filter(Boolean).join(' · ');
+function renderCV(content: CVContent, styles: PdfStyles, photo: string | null, template: { id: string; photo: boolean; accent: string; category: string }, portfolioUrl?: string) {
+  const contactParts = [content.personal?.email, content.personal?.phone, content.personal?.location].filter(Boolean);
+  if (portfolioUrl) contactParts.push(portfolioUrl);
+  const contact = contactParts.join(' · ');
 
   const photoEl = photo ? React.createElement(Image, {
     key: 'photo',
@@ -192,7 +194,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const photo = cv.photo || null;
   const styles = buildStyles(template.accent, template.photo && !!photo, template.category);
 
-  const doc = renderCV(content, styles, photo, template);
+  const profile = await prisma.profile.findUnique({ where: { id: 'local' } });
+  const portfolioUrl = profile?.portfolioUrl || undefined;
+
+  const doc = renderCV(content, styles, photo, template, portfolioUrl);
 
   const buffer = await renderToBuffer(doc);
   const uint8 = new Uint8Array(buffer);

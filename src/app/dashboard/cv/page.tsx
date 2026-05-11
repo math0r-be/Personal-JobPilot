@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import ConfirmModal from '@/components/ConfirmModal';
 
 export default function CvListPage() {
   const [cvs, setCvs] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/cvs').then(r => r.json()).then(data => { setCvs(Array.isArray(data) ? data : []); setLoading(false); });
@@ -54,13 +54,7 @@ export default function CvListPage() {
                   <Link href={`/dashboard/cv/${cv.id}`} style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', textDecoration: 'none', cursor: 'pointer' }}>
                     {String(cv.title || 'Sans titre')}
                   </Link>
-                  <button onClick={() => {
-                    (window as any).__confirmCallback = () => {
-                      fetch(`/api/cvs/${cv.id}`, { method: 'DELETE' });
-                      setCvs(cvs.filter(c => c.id !== cv.id));
-                    };
-                    router.push(`/dashboard/confirm?message=${encodeURIComponent('Supprimer ce CV ?')}`);
-                  }} style={{ background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontSize: 12, padding: '0 4px' }}>×</button>
+                  <button onClick={() => setDeleteTarget(cv.id as string)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 12, padding: '0 4px' }}>×</button>
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--ink-mute)', marginBottom: 12 }}>{String(cv.templateId)}</div>
                 <Link href={`/dashboard/cv/${cv.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 'var(--r-md)', fontSize: 12, fontWeight: 500, background: 'var(--ink)', color: 'var(--paper-warm)', textDecoration: 'none' }}>
@@ -69,6 +63,18 @@ export default function CvListPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {deleteTarget && (
+          <ConfirmModal
+            message="Supprimer ce CV ?"
+            onConfirm={() => {
+              fetch(`/api/cvs/${deleteTarget}`, { method: 'DELETE' });
+              setCvs(cvs.filter(c => c.id !== deleteTarget));
+              setDeleteTarget(null);
+            }}
+            onCancel={() => setDeleteTarget(null)}
+          />
         )}
       </div>
     </div>

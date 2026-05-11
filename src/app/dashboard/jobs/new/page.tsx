@@ -48,7 +48,10 @@ function JobForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error('Erreur lors de la création');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Impossible de créer l\'annonce. Vérifiez les champs et réessayez.');
+      }
       const job = await res.json();
       router.push(`/dashboard/jobs/${job.id}`);
     } catch (err) {

@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { updateProfile, updateAiConfig, testAiConnection, updateSmtpConfig, testSmtpEmail } from '@/actions/settings';
 
 interface Props {
-  initialProfile: { name: string; email: string; phone: string; location: string; summary: string; photoUrl: string };
+  initialProfile: { name: string; email: string; phone: string; location: string; summary: string; photoUrl: string; portfolioUrl: string; locale: string; targetRoles: string; targetSalary: string; dealBreakers: string; narrative: string };
   initialAiConfig: { provider: string; apiKey: string; baseUrl: string; model: string };
   initialSmtpConfig: { host: string; port: number; secure: boolean; user: string; pass: string; fromName: string; fromEmail: string };
   referenceCvId: string | null;
@@ -54,7 +54,7 @@ function ProfileSection({ initial, onSave, referenceCvId }: { initial: Props['in
   const linkedinRef = useRef<HTMLInputElement>(null);
 
   const save = async () => {
-    await updateProfile(form);
+    await updateProfile(form as Parameters<typeof updateProfile>[0]);
     onSave();
   };
 
@@ -171,10 +171,57 @@ function ProfileSection({ initial, onSave, referenceCvId }: { initial: Props['in
         <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} style={inputStyle} />
       </Field>
       <Field label="Localisation">
-        <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="Paris, Remote…" style={inputStyle} />
+        <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="Bruxelles, Remote…" style={inputStyle} />
+      </Field>
+      <Field label="Portfolio / LinkedIn / GitHub">
+        <input value={form.portfolioUrl || ''} onChange={e => setForm({ ...form, portfolioUrl: e.target.value })} placeholder="https://github.com/votreprojet" style={inputStyle} />
+      </Field>
+      <Field label="Marché / Localisation">
+        <select value={form.locale || 'fr-FR'} onChange={e => setForm({ ...form, locale: e.target.value })} style={{ ...inputStyle, cursor: 'pointer' }}>
+          <option value="fr-FR">🇫🇷 France</option>
+          <option value="fr-BE">🇧🇪 Belgique</option>
+          <option value="en">🇬🇧 English</option>
+        </select>
       </Field>
       <Field label="Résumé / Accroche">
         <textarea value={form.summary} onChange={e => setForm({ ...form, summary: e.target.value })} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
+      </Field>
+      <Field label="Rôles cibles (séparés par virgule)">
+        <input value={form.targetRoles || ''} onChange={e => setForm({ ...form, targetRoles: e.target.value })} placeholder="Senior DevOps, Head of Platform, SRE…" style={inputStyle} />
+      </Field>
+      <Field label="Salaire cible">
+        <input value={form.targetSalary || ''} onChange={e => setForm({ ...form, targetSalary: e.target.value })} placeholder="ex: 65-80k€" style={inputStyle} />
+      </Field>
+      <Field label="Deal-breakers (séparés par virgule)">
+        <input value={form.dealBreakers || ''} onChange={e => setForm({ ...form, dealBreakers: e.target.value })} placeholder="No remote, No startup, No on-call, No commission…" style={inputStyle} />
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+          {['No remote', 'No startup', 'No on-call', 'No commission', 'No relocation', 'Min 50k€'].map(tag => {
+            const current = (form.dealBreakers || '').split(',').map(s => s.trim()).filter(Boolean);
+            const active = current.includes(tag);
+            return (
+              <button
+                key={tag}
+                onClick={() => {
+                  const currentList = (form.dealBreakers || '').split(',').map(s => s.trim()).filter(Boolean);
+                  const updated = active ? currentList.filter(t => t !== tag) : [...currentList, tag];
+                  setForm({ ...form, dealBreakers: updated.join(', ') });
+                }}
+                style={{
+                  height: 24, padding: '0 8px', borderRadius: 'var(--r-pill)', fontSize: 10,
+                  border: `1px solid ${active ? 'var(--accent)' : 'var(--line-soft)'}`,
+                  background: active ? 'var(--accent-dim)' : 'transparent',
+                  color: active ? 'var(--accent)' : 'var(--ink-soft)',
+                  cursor: 'pointer', fontWeight: active ? 600 : 400,
+                }}
+              >
+                {active ? '✓ ' : ''}{tag}
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+      <Field label="Narrative / Histoire pro">
+        <textarea value={form.narrative || ''} onChange={e => setForm({ ...form, narrative: e.target.value })} rows={3} placeholder="Ton parcours en 2-3 phrases. Ce qui te rend unique." style={{ ...inputStyle, resize: 'vertical' }} />
       </Field>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
         <button onClick={save} style={btnPrimary}>Enregistrer</button>

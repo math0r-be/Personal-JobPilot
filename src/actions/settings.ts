@@ -10,17 +10,17 @@ import { z } from 'zod';
 
 export async function getProfile() {
   const profile = await prisma.profile.findUnique({ where: { id: 'local' } });
-  return profile ?? { id: 'local', name: '', email: '', phone: '', location: '', summary: '', photoUrl: '' };
+  return profile ?? { id: 'local', name: '', email: '', phone: '', location: '', summary: '', photoUrl: '', portfolioUrl: '', locale: 'fr-FR', targetRoles: '', targetSalary: '', dealBreakers: '', narrative: '' };
 }
 
 export async function updateProfile(data: z.infer<typeof profileSchema>) {
   const parsed = profileSchema.safeParse(data);
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
-  const { name, email, phone, location, summary, photoUrl } = parsed.data;
+  const { name, email, phone, location, summary, photoUrl, portfolioUrl, locale, targetRoles, targetSalary, dealBreakers, narrative } = parsed.data;
   return prisma.profile.upsert({
     where: { id: 'local' },
-    create: { id: 'local', name: name ?? '', email: email ?? '', phone: phone ?? '', location: location ?? '', summary: summary ?? '', photoUrl: photoUrl ?? '' },
+    create: { id: 'local', name: name ?? '', email: email ?? '', phone: phone ?? '', location: location ?? '', summary: summary ?? '', photoUrl: photoUrl ?? '', portfolioUrl: portfolioUrl ?? '', locale: locale ?? 'fr-FR', targetRoles: targetRoles ?? '', targetSalary: targetSalary ?? '', dealBreakers: dealBreakers ?? '', narrative: narrative ?? '' },
     update: {
       ...(name !== undefined && { name }),
       ...(email !== undefined && { email }),
@@ -28,6 +28,12 @@ export async function updateProfile(data: z.infer<typeof profileSchema>) {
       ...(location !== undefined && { location }),
       ...(summary !== undefined && { summary }),
       ...(photoUrl !== undefined && { photoUrl }),
+      ...(portfolioUrl !== undefined && { portfolioUrl }),
+      ...(locale !== undefined && { locale }),
+      ...(targetRoles !== undefined && { targetRoles }),
+      ...(targetSalary !== undefined && { targetSalary }),
+      ...(dealBreakers !== undefined && { dealBreakers }),
+      ...(narrative !== undefined && { narrative }),
     },
   });
 }

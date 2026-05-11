@@ -81,11 +81,12 @@ export default function MatchPage() {
         body: JSON.stringify({ jobText: text }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Erreur serveur');
+      if (!res.ok) throw new Error(data.error ?? "L'analyse a échoué. Vérifiez votre clé API et réessayez.");
       setResult(data as MatchResult);
       setPhase('result');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue');
+      const msg = e instanceof Error ? e.message : 'Erreur inconnue';
+      setError(msg.includes('fetch') ? 'Impossible de contacter le serveur. Vérifiez que le service est en cours d\'exécution.' : msg);
       setPhase('input');
     }
   };
@@ -187,7 +188,9 @@ function InputView({ text, setText, onAnalyze }: { text: string; setText: (v: st
               transition: 'all 150ms',
               boxShadow: text.trim() ? '0 0 18px var(--accent-dim)' : 'none',
             }}
-          >⚡ ENGAGE</button>
+          >
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+              {' '}ENGAGE</button>
         </div>
       </div>
     </div>
@@ -200,6 +203,7 @@ function ScanlineOverlay() {
   const startRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const animate = (ts: number) => {
       if (!startRef.current) startRef.current = ts;
       const p = ((ts - startRef.current) / 2000) % 1;
@@ -251,6 +255,7 @@ function RadarLoader({ size = 80 }: { size?: number }) {
   const prevRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const tick = (ts: number) => {
       if (prevRef.current) setAngle(a => (a + (ts - (prevRef.current ?? ts)) * 0.18) % 360);
       prevRef.current = ts;
@@ -383,9 +388,8 @@ function BulletScoreView({ bullet }: { bullet: BulletScore }) {
   const color = getBandColor(bullet.band);
   return (
     <div style={{
-      background: 'var(--surface-2)',
+      background: `linear-gradient(90deg, ${color}15, ${color}15 3px, var(--surface-2) 3px)`,
       border: `1px solid ${color}22`,
-      borderLeft: `3px solid ${color}`,
       borderRadius: 6,
       padding: '12px 16px',
       marginBottom: 10,
@@ -619,7 +623,9 @@ function ResultView({ result, onReset }: { result: MatchResult; onReset: () => v
         <button onClick={onReset} style={{ height: 34, padding: '0 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mute)', fontSize: 12, cursor: 'pointer' }}>← Nouvelle annonce</button>
         {result.cvId && (
           <>
-            <Link href={`/dashboard/cv/${result.cvId}`} style={{ height: 34, padding: '0 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mute)', fontSize: 12, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>✏ Éditer</Link>
+            <Link href={`/dashboard/cv/${result.cvId}`} style={{ height: 34, padding: '0 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-mute)', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+              Éditer</Link>
             <a href={`/api/cvs/${result.cvId}/export`} download style={{ height: 34, padding: '0 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--bg)', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', textDecoration: 'none', fontFamily: 'var(--font-mono)', letterSpacing: 0.5 }}>↓ EXPORTER</a>
           </>
         )}

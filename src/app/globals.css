@@ -179,6 +179,17 @@ input, textarea, select {
   background: var(--danger); border-color: var(--danger); color: var(--text);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .fade-up { animation: none !important; opacity: 1 !important; }
+  .skeleton { animation: none !important; }
+  .mc-cursor::after { animation: none !important; }
+}
+
 @media (max-width: 768px) {
   .cv-editor-wrap > div:first-child {
     display: none !important;

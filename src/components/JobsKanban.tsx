@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -13,6 +13,7 @@ import {
   useDroppable,
   useDraggable,
 } from '@dnd-kit/core';
+import ConfirmModal from './ConfirmModal';
 
 const STATUS_ORDER = ['new', 'applied', 'interview', 'offer', 'rejected', 'archived'] as const;
 type Status = (typeof STATUS_ORDER)[number];
@@ -34,6 +35,11 @@ export type KanbanJob = {
   status: string;
   updatedAt: string;
   followUpDate?: string | null;
+  lastFollowUpAt?: string | null;
+  followUpCount?: number;
+  score?: number | null;
+  archetype?: string | null;
+  legitimacy?: string | null;
   _count: { cvs: number; emails: number };
 };
 
@@ -62,6 +68,14 @@ function DraggableCard({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: job.id });
   const isMenuOpen = menuOpenId === job.id;
   const isStale = Date.now() - new Date(job.updatedAt).getTime() > STALE_MS;
+  const isOverdue = job.status === 'applied' && (job.followUpCount ?? 0) === 0 && isStale;
+  const isCold = (job.followUpCount ?? 0) >= 2;
+
+  const handleLogFollowUp = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await fetch(`/api/jobs/${job.id}/followup`, { method: 'POST' });
+    router.refresh();
+  };
 
   return (
     <div
@@ -142,6 +156,19 @@ function DraggableCard({
                 </button>
               ))}
               <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+              {(job.status === 'applied' || job.status === 'interview') && (
+                <>
+                  <button
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => { e.stopPropagation(); setMenuOpenId(null); handleLogFollowUp(e as unknown as React.MouseEvent); }}
+                    style={menuBtnStyle}
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>
+                    {' '}Noter relance ({job.followUpCount ?? 0})
+                  </button>
+                  <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                </>
+              )}
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setMenuOpenId(null); onDelete(job.id, job.company || ''); }}
@@ -156,7 +183,44 @@ function DraggableCard({
 
       {/* Badges */}
       <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        {isStale && (
+        {job.score != null && (
+          <span style={{
+            fontSize: 9, padding: '1px 5px', borderRadius: 3,
+            background: job.score >= 4 ? 'var(--good-dim)' : job.score >= 3 ? 'var(--warn-dim)' : 'var(--danger-dim)',
+            color: job.score >= 4 ? 'var(--good)' : job.score >= 3 ? 'var(--warn)' : 'var(--danger)',
+            fontFamily: 'var(--font-mono)', letterSpacing: 0.5, fontWeight: 600,
+          }}>
+            {job.score.toFixed(1)}
+          </span>
+        )}
+        {job.archetype && (
+          <span style={{
+            fontSize: 9, padding: '1px 5px', borderRadius: 3,
+            background: 'var(--accent-dim)', color: 'var(--accent)',
+            fontFamily: 'var(--font-mono)', letterSpacing: 0.5,
+          }}>
+            {job.archetype}
+          </span>
+        )}
+        {isOverdue && (
+          <span style={{
+            fontSize: 9, padding: '1px 5px', borderRadius: 3,
+            background: 'var(--danger-dim)', color: 'var(--danger)',
+            fontFamily: 'var(--font-mono)', letterSpacing: 0.5, border: '1px solid var(--danger)',
+          }}>
+            EN RETARD
+          </span>
+        )}
+        {isCold && (
+          <span style={{
+            fontSize: 9, padding: '1px 5px', borderRadius: 3,
+            background: 'rgba(128,128,128,0.15)', color: 'var(--text-mute)',
+            fontFamily: 'var(--font-mono)', letterSpacing: 0.5,
+          }}>
+            FROID
+          </span>
+        )}
+        {isStale && !isOverdue && (
           <span style={{
             fontSize: 9, padding: '1px 5px', borderRadius: 3,
             background: 'rgba(128,128,128,0.15)', color: 'var(--text-mute)',
@@ -314,8 +378,24 @@ export default function JobsKanban({ initialJobs }: { initialJobs: KanbanJob[] }
   const [jobs, setJobs] = useState(initialJobs);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; company: string } | null>(null);
+  const [archetypeFilter, setArchetypeFilter] = useState('');
+  const [healthReport, setHealthReport] = useState<Record<string, unknown> | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  const archetypes = Array.from(new Set(jobs.map(j => j.archetype).filter((a): a is string => !!a))).sort();
+  const filteredJobs = archetypeFilter ? jobs.filter(j => j.archetype === archetypeFilter) : jobs;
   const prevRef = useRef(jobs);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!menuOpenId && !deleteTarget) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setMenuOpenId(null); setDeleteTarget(null); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [menuOpenId, deleteTarget]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -355,15 +435,19 @@ export default function JobsKanban({ initialJobs }: { initialJobs: KanbanJob[] }
   };
 
   const handleDelete = (jobId: string, company: string) => {
-    (window as any).__confirmCallback = () => {
-      prevRef.current = jobs;
-      setJobs(prev => prev.filter(j => j.id !== jobId));
-      fetch(`/api/jobs/${jobId}`, { method: 'DELETE' })
-        .then(r => { if (!r.ok) setJobs(prevRef.current); })
-        .catch(() => setJobs(prevRef.current));
-    };
-    router.push(`/dashboard/confirm?message=${encodeURIComponent(`Supprimer la candidature chez ${company || 'cette entreprise'} ?`)}`);
+    setDeleteTarget({ id: jobId, company });
   };
+
+  const confirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    prevRef.current = jobs;
+    const { id } = deleteTarget;
+    setJobs(prev => prev.filter(j => j.id !== id));
+    setDeleteTarget(null);
+    fetch(`/api/jobs/${id}`, { method: 'DELETE' })
+      .then(r => { if (!r.ok) setJobs(prevRef.current); })
+      .catch(() => setJobs(prevRef.current));
+  }, [deleteTarget, jobs]);
 
   return (
     <>
@@ -373,6 +457,91 @@ export default function JobsKanban({ initialJobs }: { initialJobs: KanbanJob[] }
           onClick={() => setMenuOpenId(null)}
         />
       )}
+      {archetypes.length > 0 && (
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-mute)', letterSpacing: 0.8 }}>ARCHETYPE</span>
+          <select
+            value={archetypeFilter}
+            onChange={e => setArchetypeFilter(e.target.value)}
+            style={{
+              height: 28, padding: '0 8px', borderRadius: 'var(--r-md)', fontSize: 11,
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--text)', cursor: 'pointer', outline: 'none',
+            }}
+          >
+            <option value="">Tous</option>
+            {archetypes.map(a => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+          {archetypeFilter && (
+            <button
+              onClick={() => setArchetypeFilter('')}
+              style={{
+                height: 22, padding: '0 8px', borderRadius: 'var(--r-pill)', fontSize: 9,
+                background: 'var(--accent-dim)', color: 'var(--accent)',
+                border: '1px solid var(--accent)', cursor: 'pointer',
+              }}
+            >
+              ✕ Effacer
+            </button>
+          )}
+        </div>
+      )}
+
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          onClick={async () => {
+            setHealthLoading(true);
+            try {
+              const res = await fetch('/api/jobs/integrity');
+              setHealthReport(await res.json());
+            } catch {}
+            setHealthLoading(false);
+          }}
+          disabled={healthLoading}
+          style={{
+            height: 28, padding: '0 10px', borderRadius: 'var(--r-md)', fontSize: 10,
+            fontFamily: 'var(--font-mono)', letterSpacing: 0.5,
+            border: '1px solid var(--border)', background: 'var(--surface)',
+            color: 'var(--text)', cursor: healthLoading ? 'default' : 'pointer',
+            opacity: healthLoading ? 0.6 : 1, whiteSpace: 'nowrap',
+          }}
+        >
+          {healthLoading ? '◎ Vérification…' : '◎ Health Check'}
+        </button>
+        {healthReport && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {(healthReport.anomalies as string[]).length > 0 && (
+              <span style={{ fontSize: 10, color: 'var(--danger)', fontFamily: 'var(--font-mono)' }}>
+                {(healthReport.anomalies as string[]).length} anomalies
+              </span>
+            )}
+            {(healthReport.duplicateCount as number) > 0 && (
+              <span style={{ fontSize: 10, color: 'var(--warn)', fontFamily: 'var(--font-mono)' }}>
+                {(healthReport.duplicateCount as number)} doublons
+              </span>
+            )}
+            {(healthReport.unparsedJobs as number) > 0 && (
+              <span style={{ fontSize: 10, color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)' }}>
+                {(healthReport.unparsedJobs as number)} non parsés
+              </span>
+            )}
+            {(healthReport.unevaluatedJobs as number) > 0 && (
+              <span style={{ fontSize: 10, color: 'var(--ink-mute)', fontFamily: 'var(--font-mono)' }}>
+                {(healthReport.unevaluatedJobs as number)} non évalués
+              </span>
+            )}
+            <button
+              onClick={() => setHealthReport(null)}
+              style={{ height: 20, padding: '0 6px', borderRadius: 4, fontSize: 9, border: 'none', background: 'transparent', color: 'var(--text-mute)', cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
@@ -388,7 +557,7 @@ export default function JobsKanban({ initialJobs }: { initialJobs: KanbanJob[] }
             <DroppableColumn
               key={status}
               status={status}
-              jobs={jobs.filter(j => j.status === status)}
+              jobs={filteredJobs.filter(j => j.status === status)}
               menuOpenId={menuOpenId}
               setMenuOpenId={setMenuOpenId}
               onStatusChange={handleStatusChange}
@@ -397,9 +566,17 @@ export default function JobsKanban({ initialJobs }: { initialJobs: KanbanJob[] }
           ))}
         </div>
         <DragOverlay>
-          {activeId ? <CardPreview job={jobs.find(j => j.id === activeId)} /> : null}
+          {activeId ? <CardPreview job={filteredJobs.find(j => j.id === activeId)} /> : null}
         </DragOverlay>
       </DndContext>
+
+      {deleteTarget && (
+        <ConfirmModal
+          message={`Supprimer la candidature chez ${deleteTarget.company || 'cette entreprise'} ?`}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </>
   );
 }

@@ -70,7 +70,7 @@ export default function LandingPage() {
       setPhase('done');
       setTimeout(() => router.push('/dashboard'), 800);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur');
+      setError(e instanceof Error ? e.message : 'Échec de la connexion. Vérifiez votre clé API.');
     } finally {
       setSaving(false);
     }
@@ -107,10 +107,10 @@ export default function LandingPage() {
               <p style={{ fontSize: 13, color: 'var(--ink-mute)', marginBottom: 24 }}>Vous fournissez votre propre clé API. Aucun accès à vos données.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
                 {[
-                  { id: 'openrouter', label: 'OpenRouter', desc: 'Multi-modèles, dont des gratuits.推荐', icon: '◉' },
-                  { id: 'openai', label: 'OpenAI', desc: 'GPT-4o mini, performant et abordable.', icon: '◉' },
-                  { id: 'ollama', label: 'Ollama (local)', desc: '100% offline. Installez un modèle sur votre machine.', icon: '◉' },
-                  { id: 'custom', label: 'Custom API', desc: 'Utilisez n importe quel endpoint compatible OpenAI.', icon: '◉' },
+                  { id: 'openrouter', label: 'OpenRouter', desc: 'Multi-modèles, dont des gratuits.推荐', icon: 'circle' },
+                  { id: 'openai', label: 'OpenAI', desc: 'GPT-4o mini, performant et abordable.', icon: 'circle' },
+                  { id: 'ollama', label: 'Ollama (local)', desc: '100% offline. Installez un modèle sur votre machine.', icon: 'circle' },
+                  { id: 'custom', label: 'Custom API', desc: 'Utilisez n importe quel endpoint compatible OpenAI.', icon: 'circle' },
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -122,7 +122,13 @@ export default function LandingPage() {
                       cursor: 'pointer', textAlign: 'left', transition: 'all 120ms',
                     }}
                   >
-                    <span style={{ fontSize: 16 }}>{opt.icon}</span>
+                    <span>
+                      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        {provider === opt.id
+                          ? <><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="4" fill="currentColor" /></>
+                          : <circle cx="12" cy="12" r="10" />}
+                      </svg>
+                    </span>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14 }}>{opt.label}</div>
                       <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>{opt.desc}</div>
@@ -186,7 +192,7 @@ export default function LandingPage() {
                 />
               </div>
 
-              {error && <div style={{ background: '#fee', border: '1px solid #f99', borderRadius: 'var(--r-md)', padding: '8px 12px', fontSize: 12, color: '#c00', marginBottom: 12 }}>{error}</div>}
+              {error && <div style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger)', borderRadius: 'var(--r-md)', padding: '8px 12px', fontSize: 12, color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 
               <button
                 onClick={handleSave}

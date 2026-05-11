@@ -22,6 +22,9 @@ export default async function JobsPage() {
     status: j.status,
     updatedAt: j.updatedAt.toISOString(),
     followUpDate: j.followUpDate ? j.followUpDate.toISOString() : null,
+    score: j.score,
+    archetype: j.archetype,
+    legitimacy: j.legitimacy,
     _count: j._count,
   }));
 

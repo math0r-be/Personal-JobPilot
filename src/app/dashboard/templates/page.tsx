@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
+import { CV_COLORS, TEMPLATE_PRESETS } from '@/lib/templateTokens';
 
 // ─── CV Data ──────────────────────────────────────────────────────────────────
 const CV = {
@@ -31,12 +32,12 @@ type Exp = typeof CV.experience[0];
 type Edu = typeof CV.education[0];
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
-function PhotoPlaceholder({ size, radius = 0, border = 'none', bg = '#ccc' }: { size: number; radius?: number; border?: string; bg?: string }) {
+function PhotoPlaceholder({ size, radius = 0, border = 'none', bg = CV_COLORS.photoBg }: { size: number; radius?: number; border?: string; bg?: string }) {
   return (
     <div style={{ width: size, height: size, borderRadius: radius, background: bg, border, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 48 48" fill="none">
-        <circle cx="24" cy="18" r="9" fill="rgba(0,0,0,0.15)" />
-        <ellipse cx="24" cy="40" rx="16" ry="10" fill="rgba(0,0,0,0.15)" />
+        <circle cx="24" cy="18" r="9" fill={CV_COLORS.iconBg} />
+        <ellipse cx="24" cy="40" rx="16" ry="10" fill={CV_COLORS.iconBg} />
       </svg>
     </div>
   );
@@ -49,7 +50,7 @@ function LangBar({ lang, level, pct, accent }: { lang: string; level: string; pc
         <span style={{ fontWeight: 600 }}>{lang}</span>
         <span style={{ opacity: 0.6 }}>{level}</span>
       </div>
-      <div style={{ height: 3, background: 'rgba(0,0,0,0.1)', borderRadius: 2 }}>
+      <div style={{ height: 3, background: CV_COLORS.barBg, borderRadius: 2 }}>
         <div style={{ height: '100%', width: `${pct}%`, background: accent, borderRadius: 2 }} />
       </div>
     </div>
@@ -67,7 +68,7 @@ function SectionHead({ label, accent }: { label: string; accent: string }) {
 // ─── Template 1: ATLAS — Classic serif ────────────────────────────────────────
 function T_Atlas() {
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, padding: '64px 72px', fontFamily: 'Georgia, "Times New Roman", serif', color: '#1a1a1a', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, padding: '64px 72px', fontFamily: 'Georgia, "Times New Roman", serif', color: '#1a1a1a', boxSizing: 'border-box' as const }}>
       <div style={{ textAlign: 'center' as const, paddingBottom: 28, marginBottom: 28, borderBottom: '2px solid #1a1a1a' }}>
         <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase' as const }}>{CV.name}</div>
         <div style={{ fontSize: 14, color: '#555', marginTop: 6, letterSpacing: 4, textTransform: 'uppercase' as const, fontStyle: 'italic' }}>{CV.title}</div>
@@ -124,7 +125,7 @@ function T_Atlas() {
 function T_Meridian() {
   const accent = '#e86c3a';
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, display: 'flex', fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#1a1a1a', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, display: 'flex', fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#1a1a1a', boxSizing: 'border-box' as const }}>
       <div style={{ width: 240, background: '#1c1c24', padding: '44px 24px', display: 'flex', flexDirection: 'column' as const, gap: 28, flexShrink: 0, minHeight: 1123 }}>
         <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 14 }}>
           <PhotoPlaceholder size={96} radius={48} bg="#2e2e3a" />
@@ -182,7 +183,7 @@ function T_Meridian() {
 // ─── Template 3: LUNAR — Ultra minimal ────────────────────────────────────────
 function T_Lunar() {
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, padding: '80px 96px', fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#111', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, padding: '80px 96px', fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#111', boxSizing: 'border-box' as const }}>
       <div style={{ marginBottom: 56 }}>
         <div style={{ fontSize: 44, fontWeight: 200, letterSpacing: -2, lineHeight: 1 }}>{CV.name}</div>
         <div style={{ fontSize: 14, color: '#999', marginTop: 10, letterSpacing: 1 }}>{CV.title}</div>
@@ -222,7 +223,7 @@ function T_Lunar() {
 function T_Vega() {
   const accent = '#ff4d2e';
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#1a1a1a', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#1a1a1a', boxSizing: 'border-box' as const }}>
       <div style={{ background: accent, padding: '52px 56px 40px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: 100, background: 'rgba(255,255,255,0.07)' }} />
         <div style={{ fontSize: 46, fontWeight: 900, color: '#fff', lineHeight: 0.9, textTransform: 'uppercase' as const, letterSpacing: -2, position: 'relative' }}>{CV.name}</div>
@@ -276,7 +277,7 @@ function T_Vega() {
 function T_Consul() {
   const gold = '#b8952a';
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, fontFamily: 'Georgia, serif', color: '#1a1a1a', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, fontFamily: 'Georgia, serif', color: '#1a1a1a', boxSizing: 'border-box' as const }}>
       <div style={{ background: '#1c2235', padding: '44px 56px' }}>
         <div style={{ fontSize: 34, fontWeight: 400, color: '#f5f0e8', letterSpacing: 1 }}>{CV.name}</div>
         <div style={{ fontSize: 13, color: gold, marginTop: 6, letterSpacing: 3, textTransform: 'uppercase' as const }}>{CV.title}</div>
@@ -337,7 +338,7 @@ function T_Prism() {
   const accent = '#2563eb';
   return (
     <div style={{ background: '#f7f8fc', width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#1a1a1a', boxSizing: 'border-box' as const }}>
-      <div style={{ display: 'flex', background: '#fff', borderBottom: '1px solid #e8eaf0' }}>
+      <div style={{ display: 'flex', background: CV_COLORS.pageBg, borderBottom: '1px solid #e8eaf0' }}>
         <div style={{ flex: 1, padding: '44px 44px 32px' }}>
           <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: -2, lineHeight: 0.9 }}>{CV.name}</div>
           <div style={{ fontSize: 14, color: accent, marginTop: 10, fontWeight: 600, letterSpacing: 1 }}>{CV.title}</div>
@@ -350,7 +351,7 @@ function T_Prism() {
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px' }}>
-        <div style={{ padding: '32px 44px', borderRight: '1px solid #e8eaf0', background: '#fff' }}>
+        <div style={{ padding: '32px 44px', borderRight: '1px solid #e8eaf0', background: CV_COLORS.pageBg }}>
           <p style={{ fontSize: 13, lineHeight: 1.8, color: '#555', marginBottom: 28, paddingBottom: 20, borderBottom: '1px solid #eee' }}>{CV.summary}</p>
           <SectionHead label="Expérience" accent={accent} />
           {CV.experience.map((exp, i) => (
@@ -373,7 +374,7 @@ function T_Prism() {
         <div style={{ padding: '32px 28px', background: '#f7f8fc' }}>
           <SectionHead label="Compétences" accent={accent} />
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5, marginBottom: 24 }}>
-            {CV.skills.map(s => <div key={s} style={{ fontSize: 11.5, padding: '5px 10px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: 4 }}>{s}</div>)}
+            {CV.skills.map(s => <div key={s} style={{ fontSize: 11.5, padding: '5px 10px', background: CV_COLORS.pageBg, border: '1px solid #e8eaf0', borderRadius: 4 }}>{s}</div>)}
           </div>
           <SectionHead label="Langues" accent={accent} />
           {CV.languages.map(l => <LangBar key={l.lang} {...l} accent={accent} />)}
@@ -407,7 +408,7 @@ function T_Grid() {
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase' as const, color: accent, marginBottom: 12 }}>Stack & Expertise</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
           {CV.skills.map(s => (
-            <div key={s} style={{ padding: '7px 10px', background: '#fff', border: '1px solid #e8edf2', borderRadius: 4, fontSize: 11, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div key={s} style={{ padding: '7px 10px', background: CV_COLORS.pageBg, border: '1px solid #e8edf2', borderRadius: 4, fontSize: 11, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}>
               <div style={{ width: 5, height: 5, borderRadius: 2.5, background: accent, flexShrink: 0 }} />{s}
             </div>
           ))}
@@ -503,7 +504,7 @@ function T_Dusk() {
 function T_Bloom() {
   const accent = '#7c3aed';
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#1a1a1a', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#1a1a1a', boxSizing: 'border-box' as const }}>
       <div style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #db2777 100%)', padding: '44px 52px', display: 'flex', gap: 24, alignItems: 'center' }}>
         <PhotoPlaceholder size={90} radius={45} bg="rgba(255,255,255,0.15)" border="3px solid rgba(255,255,255,0.4)" />
         <div>
@@ -560,7 +561,7 @@ function T_Bloom() {
 function T_Strata() {
   const accent = '#16a34a';
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#111', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#111', boxSizing: 'border-box' as const }}>
       <div style={{ display: 'flex', height: 130 }}>
         <div style={{ flex: 1, background: '#111', display: 'flex', flexDirection: 'column' as const, justifyContent: 'center', padding: '0 48px' }}>
           <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', letterSpacing: -1.5 }}>{CV.name}</div>
@@ -615,7 +616,7 @@ function T_Strata() {
 // ─── Template 11: NOMAD — Consultancy two-col ─────────────────────────────────
 function T_Nomad() {
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, display: 'flex', flexDirection: 'column' as const, fontFamily: "'Helvetica Neue', Arial, sans-serif", boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, display: 'flex', flexDirection: 'column' as const, fontFamily: "'Helvetica Neue', Arial, sans-serif", boxSizing: 'border-box' as const }}>
       <div style={{ background: '#f8fafc', padding: '40px 48px', borderBottom: '1px solid #e2e8f0' }}>
         <div style={{ fontSize: 38, fontWeight: 300, letterSpacing: -1.5, color: '#0f172a' }}>{CV.name}</div>
         <div style={{ fontSize: 14, color: '#334155', marginTop: 6, letterSpacing: 0.5 }}>{CV.title}</div>
@@ -674,7 +675,7 @@ function T_Nomad() {
 // ─── Template 12: TRIBUNE — Newspaper editorial, photo ────────────────────────
 function T_Tribune() {
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, padding: '48px 52px', fontFamily: 'Georgia, "Times New Roman", serif', color: '#1a1a1a', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, padding: '48px 52px', fontFamily: 'Georgia, "Times New Roman", serif', color: '#1a1a1a', boxSizing: 'border-box' as const }}>
       <div style={{ borderBottom: '3px solid #1a1a1a', borderTop: '3px solid #1a1a1a', padding: '16px 0', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: 42, fontWeight: 700, letterSpacing: -1 }}>{CV.name}</div>
@@ -840,7 +841,7 @@ function T_Soleil() {
 function T_Neox() {
   const accent = '#0d9488';
   return (
-    <div style={{ background: '#fff', width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#111', boxSizing: 'border-box' as const }}>
+    <div style={{ background: CV_COLORS.pageBg, width: 794, minHeight: 1123, fontFamily: "'Helvetica Neue', Arial, sans-serif", color: '#111', boxSizing: 'border-box' as const }}>
       <div style={{ display: 'flex', background: '#0d9488', minHeight: 140, position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', right: -50, top: -50, width: 250, height: 250, borderRadius: 125, background: 'rgba(255,255,255,0.06)' }} />
         <div style={{ flex: 1, padding: '36px 44px', zIndex: 1, position: 'relative' }}>

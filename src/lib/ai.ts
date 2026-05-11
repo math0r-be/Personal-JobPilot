@@ -12,10 +12,13 @@ function stripFences(raw: string): string {
 import {
   GENERATE_CV_PROMPT,
   MATCH_CV_PROMPT,
+  MATCH_CV_PROMPT_FR_BE,
   PARSE_JOB_PROMPT,
   EMAIL_COVER_LETTER_PROMPT,
   INTERVIEW_PREP_PROMPT,
   EMAIL_SUBJECT_PROMPT,
+  EVALUATE_JOB_PROMPT,
+  NEGOTIATION_PROMPT,
 } from './prompts';
 
 const PROVIDER_PRESETS: Record<string, { baseUrl: string; defaultModel: string }> = {
@@ -84,10 +87,15 @@ export async function generateCVContent(input: {
 export async function adaptCV(cvContent: string, jobPostingText: string): Promise<string> {
   const client = await getAiClient();
   const model = await getModel();
+
+  const profile = await prisma.profile.findUnique({ where: { id: 'local' } });
+  const locale = profile?.locale ?? 'fr-FR';
+  const matchPrompt = locale === 'fr-BE' ? MATCH_CV_PROMPT_FR_BE : MATCH_CV_PROMPT;
+
   const response = await client.chat.completions.create({
     model,
     messages: [
-      { role: 'system', content: MATCH_CV_PROMPT },
+      { role: 'system', content: matchPrompt },
       { role: 'user', content: `CV SOURCE:\n${cvContent}\n\nOFFRE D'EMPLOI:\n${jobPostingText}` },
     ],
     max_tokens: 2500,
@@ -157,6 +165,64 @@ export async function generateInterviewPrep(parsedData: string, cvContent: strin
     temperature: 0.7,
   });
   return stripFences(response.choices[0]?.message?.content ?? '{"questions":[]}');
+}
+
+export async function generateNegotiationScript(
+  jobTitle: string,
+  company: string,
+  salary: string,
+  location: string,
+  rawText: string,
+  profileNarrative?: string
+): Promise<string> {
+  const client = await getAiClient();
+  const model = await getModel();
+  const userContent = [
+    `Poste: ${jobTitle}`,
+    `Entreprise: ${company}`,
+    `Salaire: ${salary}`,
+    `Localisation: ${location}`,
+    `Offre: ${rawText}`,
+    profileNarrative ? `Profil candidat: ${profileNarrative}` : '',
+  ].filter(Boolean).join('\n');
+  const response = await client.chat.completions.create({
+    model,
+    messages: [
+      { role: 'system', content: NEGOTIATION_PROMPT },
+      { role: 'user', content: userContent },
+    ],
+    max_tokens: 1500,
+    temperature: 0.5,
+  });
+  return stripFences(response.choices[0]?.message?.content ?? '{}');
+}
+
+export async function evaluateJobPosting(
+  rawText: string,
+  cvContent?: string
+): Promise<{ score: number; archetype: string; legitimacy: string; evaluation: Record<string, unknown> }> {
+  const client = await getAiClient();
+  const model = await getModel();
+  const userContent = cvContent
+    ? `OFFRE D'EMPLOI:\n${rawText}\n\nCV DU CANDIDAT:\n${cvContent}`
+    : `OFFRE D'EMPLOI:\n${rawText}`;
+  const response = await client.chat.completions.create({
+    model,
+    messages: [
+      { role: 'system', content: EVALUATE_JOB_PROMPT },
+      { role: 'user', content: userContent },
+    ],
+    max_tokens: 3000,
+    temperature: 0.3,
+  });
+  const raw = stripFences(response.choices[0]?.message?.content ?? '{}');
+  const parsed = parseJson(raw) as { score?: number; archetype?: string; legitimacy?: string; evaluation?: Record<string, unknown> };
+  return {
+    score: typeof parsed.score === 'number' ? parsed.score : 0,
+    archetype: parsed.archetype ?? '',
+    legitimacy: parsed.legitimacy ?? '',
+    evaluation: (parsed.evaluation ?? {}) as Record<string, unknown>,
+  };
 }
 
 export async function generateEmailSubject(jobTitle: string, company: string, applicantName: string): Promise<string> {

@@ -1,0 +1,32 @@
+export const CV_COLORS = {
+  pageBg: '#fff',
+  textPrimary: '#1a1a1a',
+  textSecondary: '#333',
+  textMuted: '#555',
+  textSoft: '#666',
+  textFaint: '#888',
+  border: '#ddd',
+  borderLight: '#e0e0e0',
+  barBg: 'rgba(0,0,0,0.1)',
+  photoBg: '#ccc',
+  shadow: 'rgba(0,0,0,0.08)',
+  iconBg: 'rgba(0,0,0,0.15)',
+} as const;
+
+export const TEMPLATE_PRESETS: Record<string, { body: string; display: string; mono: string }> = {
+  atlas:   { body: 'Georgia, "Times New Roman", serif', display: 'Georgia, "Times New Roman", serif', mono: 'inherit' },
+  modern:  { body: '"Inter", system-ui, sans-serif', display: '"Inter", system-ui, sans-serif', mono: '"JetBrains Mono", monospace' },
+  minimal: { body: 'system-ui, sans-serif', display: '"Times New Roman", serif', mono: 'monospace' },
+  creative:{ body: '"Inter", system-ui, sans-serif', display: '"Fraunces", Georgia, serif', mono: '"JetBrains Mono", monospace' },
+  meridian:{ body: '"Inter", system-ui, sans-serif', display: '"Playfair Display", Georgia, serif', mono: '"JetBrains Mono", monospace' },
+  lunar:   { body: '"Inter", system-ui, sans-serif', display: '"Clash Display", "Inter", sans-serif', mono: '"JetBrains Mono", monospace' },
+  vega:    { body: '"Inter", system-ui, sans-serif', display: '"DM Sans", "Inter", sans-serif', mono: '"JetBrains Mono", monospace' },
+  consul:  { body: '"Inter", system-ui, sans-serif', display: '"Fraunces", Georgia, serif', mono: '"JetBrains Mono", monospace' },
+  prism:   { body: '"Inter", system-ui, sans-serif', display: '"Inter", system-ui, sans-serif', mono: '"JetBrains Mono", monospace' },
+  grid:    { body: '"Inter", system-ui, sans-serif', display: '"Clash Display", "Inter", sans-serif', mono: '"JetBrains Mono", monospace' },
+  dusk:    { body: '"Inter", system-ui, sans-serif', display: '"Playfair Display", Georgia, serif', mono: '"JetBrains Mono", monospace' },
+  bloom:   { body: '"Inter", system-ui, sans-serif', display: '"Fraunces", Georgia, serif', mono: '"JetBrains Mono", monospace' },
+  strata:  { body: '"Inter", system-ui, sans-serif', display: '"DM Sans", "Inter", sans-serif', mono: '"JetBrains Mono", monospace' },
+  nomad:   { body: '"Inter", system-ui, sans-serif', display: '"Playfair Display", Georgia, serif', mono: '"JetBrains Mono", monospace' },
+  forge:   { body: '"Inter", system-ui, sans-serif', display: '"Clash Display", "Inter", sans-serif', mono: '"JetBrains Mono", monospace' },
+};
