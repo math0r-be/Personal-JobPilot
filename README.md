@@ -35,13 +35,20 @@ No SaaS. No subscription. No data leaving your computer.
 |---|---|
 | 🤖 **AI CV Adapter** | Paste any job posting → instant tailored CV + cover letter with match score |
 | 📄 **CV Editor** | Rich editor with AI generation + 30s auto-save |
-| 🗂️ **Kanban Pipeline** | Drag & drop — New → Applied → Interview → Offer |
+| 🗂️ **Kanban Pipeline** | Drag & drop — New → Applied → Interview → Offer → Rejected / Archived |
+| ★ **AI Job Evaluation** | Score/5 + A-F structured evaluation (match, gaps, comp, interview plan, legitimacy) |
 | ✦ **Interview Prep** | AI-generated questions + hints, shown when status = interview |
+| 📖 **STAR+R Story Bank** | Accumulate reusable interview stories across evaluations |
 | 📬 **Email Composer** | Send from your own SMTP — AI subject generation |
 | 📊 **Activity Timeline** | Every action logged per job with timestamps |
 | 🔔 **Follow-up Reminders** | Dashboard highlights overdue relances |
+| 🚫 **Deal-breakers** | Define limits (no remote, no startup…) → auto-filtered in pipeline |
+| 💰 **Negotiation Scripts** | AI-generated salary, equity, remote negotiation frameworks |
+| 🔍 **Pipeline Health** | Dedup checker, anomaly detection, orphan cleanup |
 | 🎨 **15 CV Templates** | A4 templates across 6 categories (Classic, Modern, Tech…) |
-| 📤 **Export** | Download CV as `.docx` and cover letter separately |
+| 📤 **Export** | Download CV as `.docx`, `.pdf` and cover letter separately |
+| 📦 **Batch Processing** | Create + evaluate up to 20 jobs at once |
+| 🗺️ **Portal Scanner** | Scan Greenhouse boards for new openings (Anthropic, OpenAI, etc.) |
 | 🦙 **Local AI support** | Works with Ollama, OpenRouter, OpenAI, or any custom endpoint |
 | 🖥️ **Desktop app** | Electron wrapper for a native app feel |
 
@@ -108,15 +115,20 @@ src/
 ├── app/
 │   ├── dashboard/
 │   │   ├── page.tsx          # Mission Control home
+│   │   ├── onboarding/       # 6-step setup wizard
 │   │   ├── cv/               # CV editor
-│   │   ├── jobs/             # Kanban pipeline
+│   │   ├── jobs/             # Kanban pipeline + job detail
 │   │   ├── match/            # AI adapter
+│   │   ├── compare/          # Multi-job comparison tool
 │   │   ├── emails/           # Email history + composer
 │   │   ├── templates/        # CV template gallery (15 templates)
+│   │   ├── stories/          # STAR+R story bank
+│   │   ├── batch/            # Batch job creation (up to 20 at once)
+│   │   ├── scan/             # Portal scanner (Greenhouse, etc.)
 │   │   └── settings/         # Profile, AI, SMTP config
-│   └── api/                  # REST endpoints
-├── components/               # Sidebar, CV editor, cards…
-├── lib/                      # AI client, DB, templates, export
+│   └── api/                  # REST endpoints (jobs, cvs, emails, match, evaluate, scan, batch, integrity…)
+├── components/               # Sidebar, CV editor, Kanban, EvaluationReport, cards…
+├── lib/                      # AI client, DB, templates, export, prompts, portal-scanner, pipeline-integrity
 └── types/                    # CV schema types
 prisma/
 └── schema.prisma             # Data model (SQLite)
@@ -126,9 +138,17 @@ prisma/
 
 ## 🗺️ Roadmap
 
+- [x] **AI Job Evaluation** — score/5 + A-F structured evaluation (archetype, match, gaps, comp, personalization, interview, legitimacy)
 - [x] **Interview prep** — AI-generated questions + hints per job (for interview stage)
+- [x] **STAR+R Story Bank** — accumulate reusable interview stories across evaluations
 - [x] **Activity timeline** — every action logged per job (status change, email sent, CV created, parsed)
 - [x] **Drag & drop Kanban** — move jobs between columns with optimistic updates
+- [x] **Deal-breakers** — configurable limits (no remote, no startup…) with auto-filter
+- [x] **Negotiation scripts** — AI-generated salary, equity, remote negotiation frameworks
+- [x] **Pipeline health check** — dedup, anomaly detection, orphan cleanup
+- [x] **Onboarding wizard** — 6-step guided setup (CV → infos → rôles → limites → narrative → review)
+- [x] **Batch processing** — create and evaluate up to 20 jobs in parallel
+- [x] **Portal scanner** — scan Greenhouse boards (Anthropic, OpenAI, Mistral, Hugging Face…)
 - [x] **Follow-up reminders** — dashboard shows jobs with overdue follow-up dates
 - [x] **Auto-save CV editor** — 30s debounce, no manual save needed
 - [x] **AI email subject** — one-click subject generation when composing emails
