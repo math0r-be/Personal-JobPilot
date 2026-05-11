@@ -1,7 +1,6 @@
-import OpenAI from 'openai';
 import { prisma } from '@/lib/db';
 import { parseJson } from '@/lib/utils';
-import { getAiClient, getModel } from './ai';
+import { getAiClient, getModel } from './ai-provider';
 import type { StyleProfile, ContentImport, AnalysisResult } from '@/types/style-profile';
 
 // ─── Language Detection ────────────────────────────────────────────────
