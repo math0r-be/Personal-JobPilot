@@ -94,7 +94,7 @@ export async function adaptCV(cvContent: string, jobPostingText: string): Promis
   const matchPrompt = locale === 'fr-BE' ? MATCH_CV_PROMPT_FR_BE : MATCH_CV_PROMPT;
 
   // Inject style profile if available
-  const styleProfile = await getStyleProfile(locale === 'fr-BE' ? 'fr' : 'fr');
+  const styleProfile = await getStyleProfile(locale === 'fr-BE' ? 'fr' : locale.startsWith('fr') ? 'fr' : 'en');
   const styleInjection = buildStyleInjection(styleProfile);
   const systemPrompt = styleInjection
     ? `${matchPrompt}\n\n--- STYLE DE L'AUTEUR (à respecter) ---\n${styleInjection}`
@@ -140,7 +140,7 @@ export async function generateEmailBody(
   // Inject style profile if available
   const profile = await prisma.profile.findUnique({ where: { id: 'local' } });
   const locale = profile?.locale ?? 'fr-FR';
-  const styleProfile = await getStyleProfile(locale === 'fr-BE' ? 'fr' : 'fr');
+  const styleProfile = await getStyleProfile(locale === 'fr-BE' ? 'fr' : locale.startsWith('fr') ? 'fr' : 'en');
   const styleInjection = buildStyleInjection(styleProfile);
   const systemPrompt = styleInjection
     ? `${EMAIL_COVER_LETTER_PROMPT}\n\n--- STYLE DE L'AUTEUR (à respecter) ---\n${styleInjection}`

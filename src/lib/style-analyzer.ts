@@ -144,6 +144,10 @@ export async function analyzeStyle(
   const raw = response.choices[0]?.message?.content ?? '{}';
   const parsed = parseJson(raw) as AnalysisResult;
 
+  if (!parsed?.profile?.tone || !parsed?.profile?.patterns || !parsed?.profile?.vocabulary || !parsed?.profile?.structure) {
+    throw new Error('AI returned incomplete style analysis');
+  }
+
   return parsed;
 }
 
@@ -165,7 +169,7 @@ export async function getStyleProfile(language: 'fr' | 'en' | 'global'): Promise
     structure: JSON.parse(record.structureJson),
     sampleSnippets: JSON.parse(record.sampleSnippets),
     sourceCount: record.sourceCount,
-    lastAnalyzedAt: record.lastAnalyzedAt!,
+    lastAnalyzedAt: record.lastAnalyzedAt ?? new Date(0),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -182,7 +186,7 @@ export async function getAllStyleProfiles(): Promise<StyleProfile[]> {
     structure: JSON.parse(record.structureJson),
     sampleSnippets: JSON.parse(record.sampleSnippets),
     sourceCount: record.sourceCount,
-    lastAnalyzedAt: record.lastAnalyzedAt!,
+    lastAnalyzedAt: record.lastAnalyzedAt ?? new Date(0),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   }));
@@ -227,7 +231,7 @@ export async function saveStyleProfile(
     structure: JSON.parse(record.structureJson),
     sampleSnippets: JSON.parse(record.sampleSnippets),
     sourceCount: record.sourceCount,
-    lastAnalyzedAt: record.lastAnalyzedAt!,
+    lastAnalyzedAt: record.lastAnalyzedAt ?? new Date(0),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
