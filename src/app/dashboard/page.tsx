@@ -147,29 +147,49 @@ export default async function DashboardPage() {
             {cvs.length < 4 && <NewCvCard />}
           </div>
 
-          {/* Onboarding — shown only when the user has no data at all */}
-          {jobs.length === 0 && cvs.length === 0 && (
+          {/* Onboarding — shown when profile is incomplete */}
+          {(!profile?.name || !profile?.targetRoles) && (
             <div style={{ marginBottom: 36 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--text-mute)', marginBottom: 14 }}>— DÉMARRER</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 14 }}>— LANCEMENT RAPIDE</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-                {[
-                  { n: '01', title: 'Compléter le profil', sub: 'Nom, email, résumé…', href: '/dashboard/settings' },
-                  { n: '02', title: 'Créer un CV', sub: 'Choisir un template et générer', href: '/dashboard/cv/new' },
-                  { n: '03', title: 'Ajouter un job', sub: 'Coller une annonce à analyser', href: '/dashboard/jobs/new' },
-                ].map(step => (
-                  <Link key={step.n} href={step.href} style={{
+                <Link href="/dashboard/onboarding" style={{
+                  display: 'flex', gap: 16, padding: '20px 22px',
+                  background: 'var(--accent-dim)', border: '2px solid var(--accent)',
+                  borderRadius: 8, textDecoration: 'none', color: 'var(--text)',
+                  transition: 'border-color 120ms',
+                }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 500, fontStyle: 'italic', color: 'var(--accent)', lineHeight: 1, flexShrink: 0 }}>★</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', marginBottom: 4 }}>Wizard de démarrage</div>
+                    <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Configure ton profil en 2 minutes — CV, rôles cibles, deals-breakers</div>
+                  </div>
+                </Link>
+                <Link href="/dashboard/settings" style={{
+                  display: 'flex', gap: 16, padding: '20px 22px',
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: 8, textDecoration: 'none', color: 'var(--text)',
+                  transition: 'border-color 120ms',
+                }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 500, fontStyle: 'italic', color: 'var(--accent)', lineHeight: 1, flexShrink: 0 }}>01</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Compléter le profil</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>Nom, email, résumé, IA, SMTP…</div>
+                  </div>
+                </Link>
+                {cvs.length === 0 && (
+                  <Link href="/dashboard/templates" style={{
                     display: 'flex', gap: 16, padding: '20px 22px',
                     background: 'var(--surface)', border: '1px solid var(--border)',
                     borderRadius: 8, textDecoration: 'none', color: 'var(--text)',
                     transition: 'border-color 120ms',
                   }}>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 500, fontStyle: 'italic', color: 'var(--accent)', lineHeight: 1, flexShrink: 0 }}>{step.n}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 500, fontStyle: 'italic', color: 'var(--accent)', lineHeight: 1, flexShrink: 0 }}>02</div>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{step.title}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>{step.sub}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Créer un CV</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-mute)' }}>Choisir un template et générer</div>
                     </div>
                   </Link>
-                ))}
+                )}
               </div>
             </div>
           )}
