@@ -155,3 +155,41 @@ model Story {
 
   @@index([theme])
 }
+
+// Content style analysis models
+
+model ContentImport {
+  id               String   @id @default(cuid())
+  type             String   @default("other") // email | cover_letter | other
+  source           String   @default("paste") // file | paste
+  originalFilename String?
+  rawText          String
+  language         String   @default("unknown") // fr | en | unknown
+  wordCount        Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  @@index([type])
+  @@index([language])
+}
+
+model StyleProfile {
+  id              String   @id @default(cuid())
+  language        String   // fr | en | global
+  // Tone (stored as JSON string)
+  toneJson        String   @default("{}")
+  // Writing patterns (stored as JSON string)
+  patternsJson    String   @default("{}")
+  // Vocabulary (stored as JSON string)
+  vocabularyJson  String   @default("{}")
+  // Structure (stored as JSON string)
+  structureJson   String   @default("{}")
+  // Sample snippets
+  sampleSnippets  String   @default("[]")
+  // Metadata
+  sourceCount     Int      @default(0)
+  lastAnalyzedAt  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([language])
+}

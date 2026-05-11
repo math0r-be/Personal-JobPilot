@@ -20,6 +20,7 @@ import {
   EVALUATE_JOB_PROMPT,
   NEGOTIATION_PROMPT,
 } from './prompts';
+import { getStyleProfile, buildStyleInjection } from './style-analyzer';
 
 const PROVIDER_PRESETS: Record<string, { baseUrl: string; defaultModel: string }> = {
   openrouter: {
@@ -92,10 +93,17 @@ export async function adaptCV(cvContent: string, jobPostingText: string): Promis
   const locale = profile?.locale ?? 'fr-FR';
   const matchPrompt = locale === 'fr-BE' ? MATCH_CV_PROMPT_FR_BE : MATCH_CV_PROMPT;
 
+  // Inject style profile if available
+  const styleProfile = await getStyleProfile(locale === 'fr-BE' ? 'fr' : 'fr');
+  const styleInjection = buildStyleInjection(styleProfile);
+  const systemPrompt = styleInjection
+    ? `${matchPrompt}\n\n--- STYLE DE L'AUTEUR (à respecter) ---\n${styleInjection}`
+    : matchPrompt;
+
   const response = await client.chat.completions.create({
     model,
     messages: [
-      { role: 'system', content: matchPrompt },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: `CV SOURCE:\n${cvContent}\n\nOFFRE D'EMPLOI:\n${jobPostingText}` },
     ],
     max_tokens: 2500,
@@ -128,10 +136,20 @@ export async function generateEmailBody(
 ): Promise<{ subject: string; body: string }> {
   const client = await getAiClient();
   const model = await getModel();
+
+  // Inject style profile if available
+  const profile = await prisma.profile.findUnique({ where: { id: 'local' } });
+  const locale = profile?.locale ?? 'fr-FR';
+  const styleProfile = await getStyleProfile(locale === 'fr-BE' ? 'fr' : 'fr');
+  const styleInjection = buildStyleInjection(styleProfile);
+  const systemPrompt = styleInjection
+    ? `${EMAIL_COVER_LETTER_PROMPT}\n\n--- STYLE DE L'AUTEUR (à respecter) ---\n${styleInjection}`
+    : EMAIL_COVER_LETTER_PROMPT;
+
   const response = await client.chat.completions.create({
     model,
     messages: [
-      { role: 'system', content: EMAIL_COVER_LETTER_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: `Candidat: ${candidateName}\nPoste: ${jobTitle}\nEntreprise: ${company}\nCV:\n${cvContent}\n\nOffre:\n${jobPostingText}` },
     ],
     max_tokens: 1500,
